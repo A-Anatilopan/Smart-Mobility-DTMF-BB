@@ -4,10 +4,55 @@
 // Get a free hosted Postgres database in seconds: `npx create-db`
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
   provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ================================
+// M-01 - AUTENTICAZIONE E ACCOUNT
+// Copre: UC-07, UC-08, UC-19
+// User Stories: UT.11a, UT.11b, OP.12a, OP.12b, AP.07a, AP.07b
+// INF: INF-05 (password hashata), INF-09 (autenticazione obbligatoria)
+// ================================
+
+model Utente {
+  id               Int       @id @default(autoincrement())
+  email            String    @unique @db.VarChar(255)
+  passwordHash     String    @db.VarChar(255)
+  nome             String    @db.VarChar(100)
+  cognome          String    @db.VarChar(100)
+  dataNascita      DateTime  @db.Date
+  codiceFiscale    String    @unique @db.VarChar(16)
+  numeroPatente    String?   @db.VarChar(50)
+  categoriaPatente String?   @db.VarChar(20)
+  ruolo            String    @default("UTENTE") @db.VarChar(20)
+  stato            String    @default("ATTIVO") @db.VarChar(20)
+  codiceAttivazione String?  @unique @db.VarChar(20)
+
+  // UC-08.3: tracciamento tentativi falliti per blocco temporaneo
+  tentativiFalliti Int       @default(0)
+  bloccatoFinoA    DateTime?
+
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  sessioni         Sessione[]
+
+  @@map("utenti")
+}
+
+model Sessione {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique @db.VarChar(512)
+  utenteId  Int
+  scadeAt   DateTime
+  createdAt DateTime @default(now())
+
+  utente    Utente   @relation(fields: [utenteId], references: [id], onDelete: Cascade)
+
+  @@map("sessioni")
 }
