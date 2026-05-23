@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useState } from "react";
 
 // Struttura centralizzata dei dati raccolti dal form di registrazione.
@@ -138,205 +139,224 @@ export default function RegistrazioneForm() {
   }
 
   return (
-    <form className="space-y-6" onSubmit={handleSubmit}>
-      {/* Sezione anagrafica principale con i campi obbligatori del profilo. */}
-      <div className="grid gap-5 md:grid-cols-2">
-        <div className="space-y-2">
-          <label
-            className="text-sm font-semibold text-slate-700"
-            htmlFor="nome"
-          >
-            Nome *
-          </label>
-          <input
-            id="nome"
-            type="text"
-            autoComplete="given-name"
-            value={formData.nome}
-            onChange={(event) => aggiornaCampo("nome", event.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-            placeholder="Mario"
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label
-            className="text-sm font-semibold text-slate-700"
-            htmlFor="cognome"
-          >
-            Cognome *
-          </label>
-          <input
-            id="cognome"
-            type="text"
-            autoComplete="family-name"
-            value={formData.cognome}
-            onChange={(event) => aggiornaCampo("cognome", event.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-            placeholder="Rossi"
-            required
-          />
-        </div>
-
-        <div className="space-y-2 md:col-span-2">
-          <label
-            className="text-sm font-semibold text-slate-700"
-            htmlFor="email"
-          >
-            Email *
-          </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            value={formData.email}
-            onChange={(event) => aggiornaCampo("email", event.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-            placeholder="mario.rossi@email.it"
-            required
-          />
-        </div>
-
-        <div className="space-y-2 md:col-span-2">
-          <label
-            className="text-sm font-semibold text-slate-700"
-            htmlFor="password"
-          >
-            Password *
-          </label>
-          <input
-            id="password"
-            type="password"
-            autoComplete="new-password"
-            value={formData.password}
-            onChange={(event) => aggiornaCampo("password", event.target.value)}
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-            placeholder="Almeno 8 caratteri"
-            minLength={8}
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label
-            className="text-sm font-semibold text-slate-700"
-            htmlFor="dataNascita"
-          >
-            Data di nascita *
-          </label>
-          <input
-            id="dataNascita"
-            type="date"
-            value={formData.dataNascita}
-            onChange={(event) =>
-              aggiornaCampo("dataNascita", event.target.value)
-            }
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-            required
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label
-            className="text-sm font-semibold text-slate-700"
-            htmlFor="codiceFiscale"
-          >
-            Codice fiscale *
-          </label>
-          <input
-            id="codiceFiscale"
-            type="text"
-            autoCapitalize="characters"
-            value={formData.codiceFiscale}
-            onChange={(event) =>
-              aggiornaCampo("codiceFiscale", event.target.value)
-            }
-            className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 uppercase text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-            placeholder="RSSMRA95H15H501A"
-            maxLength={16}
-            required
-          />
-        </div>
-      </div>
-
-      {/* Sezione separata per i dati patente, mantenuti opzionali. */}
-      <div className="rounded-3xl border border-dashed border-amber-300 bg-amber-50/80 p-5">
-        <div className="space-y-1">
-          <h2 className="text-base font-semibold text-amber-950">
-            Dati patente
-          </h2>
-          <p className="text-sm text-amber-900/80">
-            Compila questi campi solo se possiedi una patente di guida.
-          </p>
-        </div>
-
-        <div className="mt-4 grid gap-5 md:grid-cols-2">
+    <div className="space-y-6">
+      <form className="space-y-6" onSubmit={handleSubmit}>
+        {/* Sezione anagrafica principale con i campi obbligatori del profilo. */}
+        <div className="grid gap-5 md:grid-cols-2">
           <div className="space-y-2">
             <label
               className="text-sm font-semibold text-slate-700"
-              htmlFor="numeroPatente"
+              htmlFor="nome"
             >
-              Numero patente
+              Nome *
             </label>
             <input
-              id="numeroPatente"
+              id="nome"
               type="text"
-              autoComplete="off"
-              value={formData.numeroPatente}
+              autoComplete="given-name"
+              value={formData.nome}
               onChange={(event) =>
-                aggiornaCampo("numeroPatente", event.target.value)
+                aggiornaCampo("nome", event.target.value)
               }
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              placeholder="AB1234567"
+              placeholder="Mario"
+              required
             />
           </div>
 
           <div className="space-y-2">
             <label
               className="text-sm font-semibold text-slate-700"
-              htmlFor="categoriaPatente"
+              htmlFor="cognome"
             >
-              Categoria patente
+              Cognome *
             </label>
             <input
-              id="categoriaPatente"
+              id="cognome"
+              type="text"
+              autoComplete="family-name"
+              value={formData.cognome}
+              onChange={(event) =>
+                aggiornaCampo("cognome", event.target.value)
+              }
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              placeholder="Rossi"
+              required
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <label
+              className="text-sm font-semibold text-slate-700"
+              htmlFor="email"
+            >
+              Email *
+            </label>
+            <input
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={formData.email}
+              onChange={(event) => aggiornaCampo("email", event.target.value)}
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              placeholder="mario.rossi@email.it"
+              required
+            />
+          </div>
+
+          <div className="space-y-2 md:col-span-2">
+            <label
+              className="text-sm font-semibold text-slate-700"
+              htmlFor="password"
+            >
+              Password *
+            </label>
+            <input
+              id="password"
+              type="password"
+              autoComplete="new-password"
+              value={formData.password}
+              onChange={(event) =>
+                aggiornaCampo("password", event.target.value)
+              }
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              placeholder="Almeno 8 caratteri"
+              minLength={8}
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label
+              className="text-sm font-semibold text-slate-700"
+              htmlFor="dataNascita"
+            >
+              Data di nascita *
+            </label>
+            <input
+              id="dataNascita"
+              type="date"
+              value={formData.dataNascita}
+              onChange={(event) =>
+                aggiornaCampo("dataNascita", event.target.value)
+              }
+              className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+              required
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label
+              className="text-sm font-semibold text-slate-700"
+              htmlFor="codiceFiscale"
+            >
+              Codice fiscale *
+            </label>
+            <input
+              id="codiceFiscale"
               type="text"
               autoCapitalize="characters"
-              value={formData.categoriaPatente}
+              value={formData.codiceFiscale}
               onChange={(event) =>
-                aggiornaCampo("categoriaPatente", event.target.value)
+                aggiornaCampo("codiceFiscale", event.target.value)
               }
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 uppercase text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              placeholder="B"
-              maxLength={20}
+              placeholder="RSSMRA95H15H501A"
+              maxLength={16}
+              required
             />
           </div>
         </div>
-      </div>
 
-      {/* Il messaggio compare solo quando esiste un esito da comunicare. */}
-      {messaggio ? (
-        <div
-          className={`rounded-2xl border px-4 py-3 text-sm ${
-            messaggio.tipo === "successo"
-              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-              : "border-rose-200 bg-rose-50 text-rose-700"
-          }`}
-          aria-live="polite"
-        >
-          {messaggio.testo}
+        {/* Sezione separata per i dati patente, mantenuti opzionali. */}
+        <div className="rounded-3xl border border-dashed border-amber-300 bg-amber-50/80 p-5">
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-amber-950">
+              Dati patente
+            </h2>
+            <p className="text-sm text-amber-900/80">
+              Compila questi campi solo se possiedi una patente di guida.
+            </p>
+          </div>
+
+          <div className="mt-4 grid gap-5 md:grid-cols-2">
+            <div className="space-y-2">
+              <label
+                className="text-sm font-semibold text-slate-700"
+                htmlFor="numeroPatente"
+              >
+                Numero patente
+              </label>
+              <input
+                id="numeroPatente"
+                type="text"
+                autoComplete="off"
+                value={formData.numeroPatente}
+                onChange={(event) =>
+                  aggiornaCampo("numeroPatente", event.target.value)
+                }
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                placeholder="AB1234567"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                className="text-sm font-semibold text-slate-700"
+                htmlFor="categoriaPatente"
+              >
+                Categoria patente
+              </label>
+              <input
+                id="categoriaPatente"
+                type="text"
+                autoCapitalize="characters"
+                value={formData.categoriaPatente}
+                onChange={(event) =>
+                  aggiornaCampo("categoriaPatente", event.target.value)
+                }
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 uppercase text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                placeholder="B"
+                maxLength={20}
+              />
+            </div>
+          </div>
         </div>
-      ) : null}
 
-      {/* Il pulsante viene disabilitato durante l'invio per evitare doppi submit. */}
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-      >
-        {isSubmitting ? "Registrazione in corso..." : "Crea account"}
-      </button>
-    </form>
+        {/* Il messaggio compare solo quando esiste un esito da comunicare. */}
+        {messaggio ? (
+          <div
+            className={`rounded-2xl border px-4 py-3 text-sm ${
+              messaggio.tipo === "successo"
+                ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                : "border-rose-200 bg-rose-50 text-rose-700"
+            }`}
+            aria-live="polite"
+          >
+            {messaggio.testo}
+          </div>
+        ) : null}
+
+        {/* Il pulsante viene disabilitato durante l'invio per evitare doppi submit. */}
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+        >
+          {isSubmitting ? "Registrazione in corso..." : "Crea account"}
+        </button>
+      </form>
+
+      {/* Link di supporto per chi possiede gia un account e vuole accedere. */}
+      <p className="text-center text-sm leading-6 text-slate-600">
+        Hai gia un account?{" "}
+        <Link
+          href="/login"
+          className="font-semibold text-teal-700 transition hover:text-teal-600"
+        >
+          Accedi
+        </Link>
+      </p>
+    </div>
   );
 }
