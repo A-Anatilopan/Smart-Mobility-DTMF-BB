@@ -29,7 +29,7 @@ model Utente {
   codiceFiscale    String    @unique @db.VarChar(16)
   numeroPatente    String?   @db.VarChar(50)
   categoriaPatente String?   @db.VarChar(20)
-  ruolo            String    @default("UTENTE") @db.VarChar(20)
+  ruolo            String    @default("Utente") @db.VarChar(20)
   stato            String    @default("ATTIVO") @db.VarChar(20)
   codiceAttivazione String?  @unique @db.VarChar(20)
 

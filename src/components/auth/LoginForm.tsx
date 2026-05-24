@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 
 // Struttura dei dati essenziali richiesti per l'accesso.
@@ -14,6 +15,15 @@ type StatoMessaggio =
   | { tipo: "successo"; testo: string }
   | { tipo: "errore"; testo: string }
   | null;
+
+// Risposta minima che ci interessa leggere dalla route di login.
+type LoginApiResponse = {
+  errore?: string;
+  messaggio?: string;
+  utente?: {
+    ruolo?: string;
+  };
+};
 
 // Valori iniziali usati all'apertura della pagina e dopo un login riuscito.
 const INITIAL_FORM_DATA: LoginFormData = {
@@ -30,8 +40,24 @@ function validaForm(data: LoginFormData): string | null {
   return null;
 }
 
+// Traduciamo il ruolo restituito dal backend nella dashboard corretta.
+// Accettiamo sia i nomi canonici scelti dal progetto sia eventuali valori legacy
+// usati nelle prime prove locali, per non rompere i dati gia presenti nel DB.
+function risolviPercorsoPostLogin(ruolo: string | undefined): string {
+  if (ruolo === "Utente" || ruolo === "UTENTE") {
+    return "/dashboard";
+  }
+
+  if (ruolo === "Operatore" || ruolo === "OPERATORE") {
+    return "/operatore";
+  }
+
+  return "/admin";
+}
+
 export default function LoginForm() {
   // Gli stati locali servono per controllare input, caricamento e feedback utente.
+  const router = useRouter();
   const [formData, setFormData] = useState<LoginFormData>(INITIAL_FORM_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [messaggio, setMessaggio] = useState<StatoMessaggio>(null);
@@ -70,9 +96,7 @@ export default function LoginForm() {
         }),
       });
 
-      const result = (await response.json().catch(() => null)) as
-        | { errore?: string; messaggio?: string }
-        | null;
+      const result = (await response.json().catch(() => null)) as LoginApiResponse | null;
 
       if (!response.ok) {
         setMessaggio({
@@ -90,6 +114,10 @@ export default function LoginForm() {
           result?.messaggio ??
           "Login effettuato con successo. La tua sessione e stata avviata correttamente.",
       });
+
+      // Dopo un login valido usiamo il ruolo restituito dal backend
+      // per portare l'utente direttamente nell'area corretta.
+      router.replace(risolviPercorsoPostLogin(result?.utente?.ruolo));
     } catch {
       setMessaggio({
         tipo: "errore",

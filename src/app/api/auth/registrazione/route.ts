@@ -102,6 +102,7 @@ export async function POST(request: NextRequest) {
 
     // ---- STEP 4: Creazione account ----
     // UC-07 Sequenza Principale passo 4: crea account con stato ATTIVO
+    // Il ruolo viene salvato con il naming ufficiale concordato nel progetto.
     const nuovoUtente = await prisma.utente.create({
       data: {
         nome: nome.trim(),
@@ -112,7 +113,7 @@ export async function POST(request: NextRequest) {
         codiceFiscale: codiceFiscale.toUpperCase().trim(),
         numeroPatente: numeroPatente?.trim() || null,
         categoriaPatente: categoriaPatente?.trim() || null,
-        ruolo: "UTENTE",
+        ruolo: "Utente",
         stato: "ATTIVO",
       },
       select: {
