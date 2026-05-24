@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
+import { risolviPercorsoDashboard } from "@/lib/ruoli";
 
 // Struttura dei dati essenziali richiesti per l'accesso.
 type LoginFormData = {
@@ -38,21 +39,6 @@ function validaForm(data: LoginFormData): string | null {
   }
 
   return null;
-}
-
-// Traduciamo il ruolo restituito dal backend nella dashboard corretta.
-// Accettiamo sia i nomi canonici scelti dal progetto sia eventuali valori legacy
-// usati nelle prime prove locali, per non rompere i dati gia presenti nel DB.
-function risolviPercorsoPostLogin(ruolo: string | undefined): string {
-  if (ruolo === "Utente" || ruolo === "UTENTE") {
-    return "/dashboard";
-  }
-
-  if (ruolo === "Operatore" || ruolo === "OPERATORE") {
-    return "/operatore";
-  }
-
-  return "/admin";
 }
 
 export default function LoginForm() {
@@ -117,7 +103,7 @@ export default function LoginForm() {
 
       // Dopo un login valido usiamo il ruolo restituito dal backend
       // per portare l'utente direttamente nell'area corretta.
-      router.replace(risolviPercorsoPostLogin(result?.utente?.ruolo));
+      router.replace(risolviPercorsoDashboard(result?.utente?.ruolo));
     } catch {
       setMessaggio({
         tipo: "errore",

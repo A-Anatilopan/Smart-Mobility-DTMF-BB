@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verificaPassword, creaSessione } from "@/lib/auth";
+import { normalizzaRuolo, serializzaRuoloPerCookie } from "@/lib/ruoli";
 
 const MAX_TENTATIVI = 5;
 const BLOCCO_DURATA_MINUTI = 60;
@@ -122,6 +123,7 @@ export async function POST(request: NextRequest) {
     // ---- STEP 7: Creazione sessione ----
     // INF-09: sessione attiva associata all'account autenticato
     const token = await creaSessione(utente.id);
+    const ruoloCanonico = normalizzaRuolo(utente.ruolo);
 
     // ---- STEP 8: Risposta con cookie e dati utente ----
     const response = NextResponse.json(
@@ -132,7 +134,7 @@ export async function POST(request: NextRequest) {
           nome: utente.nome,
           cognome: utente.cognome,
           email: utente.email,
-          ruolo: utente.ruolo,
+          ruolo: ruoloCanonico,
           stato: utente.stato,
         },
       },
@@ -140,6 +142,16 @@ export async function POST(request: NextRequest) {
     );
 
     response.cookies.set("session_token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24,
+      path: "/",
+    });
+
+    // Il cookie di ruolo consente al proxy di distinguere subito l'area corretta
+    // senza dover interrogare il database a ogni navigazione protetta.
+    response.cookies.set("session_role", serializzaRuoloPerCookie(ruoloCanonico), {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",

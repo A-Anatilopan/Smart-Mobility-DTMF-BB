@@ -50,6 +50,12 @@ export async function POST(request: NextRequest) {
       path: "/",
     });
 
+    response.cookies.set("session_role", "", {
+      httpOnly: true,
+      expires: new Date(0),
+      path: "/",
+    });
+
     return response;
   } catch (error) {
     console.error("[LOGOUT ERROR]", error);
