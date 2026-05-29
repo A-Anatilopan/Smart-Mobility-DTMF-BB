@@ -3,12 +3,20 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
+const databaseUrl = process.env["DATABASE_URL"];
+
+// Prisma richiede una stringa certa: se .env manca o DATABASE_URL non e definita,
+// fermiamo subito i comandi Prisma con un errore leggibile invece di passare undefined.
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL non definita. Controlla il file .env locale.");
+}
+
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    url: databaseUrl,
   },
 });

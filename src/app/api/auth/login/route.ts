@@ -14,6 +14,8 @@ import { normalizzaRuolo, serializzaRuoloPerCookie } from "@/lib/ruoli";
 
 const MAX_TENTATIVI = 5;
 const BLOCCO_DURATA_MINUTI = 60;
+const STATO_ACCOUNT_DA_ATTIVARE = "DA_ATTIVARE";
+const STATO_ACCOUNT_SOSPESO = "SOSPESO";
 
 export async function POST(request: NextRequest) {
   try {
@@ -41,9 +43,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ---- STEP 3: Verifica account sospeso ----
+    // ---- STEP 3: Verifica stato account ----
     // UC-08 Pre-condizioni: account deve essere in stato ATTIVO
-    if (utente.stato === "SOSPESO") {
+    // UC-12 / OP.12a: un account operativo creato ma non attivato
+    // non puo aprire una sessione finche il codice identificativo non viene validato.
+    if (utente.stato === STATO_ACCOUNT_DA_ATTIVARE) {
+      return NextResponse.json(
+        {
+          errore:
+            "L'account non e ancora attivo. Completa l'attivazione con il codice identificativo prima di accedere.",
+        },
+        { status: 403 }
+      );
+    }
+
+    if (utente.stato === STATO_ACCOUNT_SOSPESO) {
       return NextResponse.json(
         {
           errore:
