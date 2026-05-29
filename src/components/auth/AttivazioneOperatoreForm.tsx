@@ -9,7 +9,7 @@ export default function AttivazioneOperatoreForm() {
       emailLabel="Email operatore"
       emailPlaceholder="operatore@email.it"
       codicePlaceholder="OPTEST2026"
-      messaggioSuccessoFallback="Account operatore attivato. Ora puoi accedere all'area riservata."
+      messaggioSuccessoFallback="Account operatore attivato. Ti stiamo portando alla pagina di accesso."
     />
   );
 }
