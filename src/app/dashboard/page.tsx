@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import LogoutButton from "@/components/auth/LogoutButton";
 import AreaServizioCard from "@/components/mappa/AreaServizioCard";
 import ListaMezziFiltrabile from "@/components/mappa/ListaMezziFiltrabile";
-import { areeServizioMock, mezziMock } from "@/lib/mappa/mock-data";
+import MappaServizioMock from "@/components/mappa/MappaServizioMock";
+import {
+  areeServizioMock,
+  mezziMock,
+  posizioneUtenteMappaMock,
+} from "@/lib/mappa/mock-data";
 import { RUOLI } from "@/lib/ruoli";
 import { richiediRuolo } from "@/lib/session";
 
@@ -120,6 +125,14 @@ export default async function DashboardUtentePage() {
             </div>
           </article>
         </section>
+
+        {/* Prima base cartografica M-02: usa i dati mock senza introdurre provider esterni. */}
+        <MappaServizioMock
+          aree={areeServizioMock}
+          mezzi={mezziDisponibili}
+          modalita="utente"
+          posizioneUtente={posizioneUtenteMappaMock}
+        />
 
         {/* Le aree coperte restano in evidenza per contestualizzare dove l'utente puo cercare il servizio. */}
         <section className="space-y-4">

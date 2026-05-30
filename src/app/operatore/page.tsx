@@ -2,8 +2,13 @@ import type { Metadata } from "next";
 import LogoutButton from "@/components/auth/LogoutButton";
 import AreaServizioCard from "@/components/mappa/AreaServizioCard";
 import ListaMezziFiltrabile from "@/components/mappa/ListaMezziFiltrabile";
+import MappaServizioMock from "@/components/mappa/MappaServizioMock";
 import MezzoCard from "@/components/mappa/MezzoCard";
-import { areeServizioMock, mezziMock } from "@/lib/mappa/mock-data";
+import {
+  areeServizioMock,
+  mezziMock,
+  posizioneOperatoreMappaMock,
+} from "@/lib/mappa/mock-data";
 import { RUOLI } from "@/lib/ruoli";
 import { richiediRuolo } from "@/lib/session";
 
@@ -142,6 +147,14 @@ export default async function DashboardOperatorePage() {
           </article>
         </section>
 
+        {/* Base cartografica operativa: visualizza l'intero campione flotta su una mappa reale di Bari. */}
+        <MappaServizioMock
+          aree={areeServizioMock}
+          mezzi={mezziMock}
+          modalita="operatore"
+          posizioneUtente={posizioneOperatoreMappaMock}
+        />
+
         {/* Questa sezione mette in evidenza le priorita immediate prima della vista completa. */}
         <section className="space-y-4">
           <div className="space-y-2">
@@ -274,7 +287,7 @@ export default async function DashboardOperatorePage() {
           />
         </section>
 
-        {/* Le aree aiutano a leggere la distribuzione del servizio prima della futura mappa interattiva. */}
+        {/* Le aree aiutano a leggere la distribuzione del servizio insieme alla mappa reale. */}
         <section className="space-y-4 pb-4">
           <div className="space-y-2">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-700">
@@ -285,8 +298,8 @@ export default async function DashboardOperatorePage() {
             </h2>
             <p className="max-w-3xl text-sm leading-6 text-slate-600">
               Questa sezione mostra le aree campione legate al servizio, utili
-              per iniziare a leggere la distribuzione della flotta prima della
-              vera vista cartografica.
+              per completare la lettura della distribuzione della flotta insieme
+              alla vista cartografica reale.
             </p>
           </div>
 

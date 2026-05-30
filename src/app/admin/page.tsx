@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import LogoutButton from "@/components/auth/LogoutButton";
 import AreaServizioCard from "@/components/mappa/AreaServizioCard";
 import ListaMezziFiltrabile from "@/components/mappa/ListaMezziFiltrabile";
+import MappaServizioMock from "@/components/mappa/MappaServizioMock";
 import { areeServizioMock, mezziMock } from "@/lib/mappa/mock-data";
 import { RUOLI } from "@/lib/ruoli";
 import { richiediRuolo } from "@/lib/session";
@@ -171,6 +172,13 @@ export default async function DashboardPubblicaAmministrazionePage() {
           </article>
         </section>
 
+        {/* Base cartografica istituzionale: usa una mappa reale di Bari con overlay del servizio. */}
+        <MappaServizioMock
+          aree={areeServizioMock}
+          mezzi={mezziMock}
+          modalita="amministrazione"
+        />
+
         {/* Questa sezione evita il dettaglio operativo del singolo mezzo e privilegia indicatori aggregati. */}
         <section className="grid gap-5 xl:grid-cols-2">
           <article className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.28)]">
@@ -260,7 +268,7 @@ export default async function DashboardPubblicaAmministrazionePage() {
             <p className="max-w-3xl text-sm leading-6 text-slate-600">
               Questa sezione rappresenta le principali aree del servizio in modo
               sintetico, utile per una lettura istituzionale della copertura del
-              sistema prima della futura mappa interattiva.
+              sistema insieme alla mappa reale gia presente nella pagina.
             </p>
           </div>
 

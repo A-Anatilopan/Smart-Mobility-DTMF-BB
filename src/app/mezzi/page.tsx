@@ -1,7 +1,12 @@
 import type { Metadata } from "next";
 import AreaServizioCard from "@/components/mappa/AreaServizioCard";
 import ListaMezziFiltrabile from "@/components/mappa/ListaMezziFiltrabile";
-import { areeServizioMock, mezziMock } from "@/lib/mappa/mock-data";
+import MappaServizioMock from "@/components/mappa/MappaServizioMock";
+import {
+  areeServizioMock,
+  mezziMock,
+  posizioneUtenteMappaMock,
+} from "@/lib/mappa/mock-data";
 
 // Metadati pubblici della prima schermata del modulo M-02.
 export const metadata: Metadata = {
@@ -72,6 +77,14 @@ export default function MezziPage() {
             </div>
           </div>
         </section>
+
+        {/* Base cartografica pubblica: mostra subito copertura e mezzi disponibili. */}
+        <MappaServizioMock
+          aree={areeServizioMock}
+          mezzi={mezziDisponibili}
+          modalita="utente"
+          posizioneUtente={posizioneUtenteMappaMock}
+        />
 
         {/* Prima sezione: l'utente vede le zone coperte prima di scegliere il mezzo. */}
         <section className="space-y-4">

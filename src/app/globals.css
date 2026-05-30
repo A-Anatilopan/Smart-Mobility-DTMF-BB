@@ -24,3 +24,26 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Elimina il focus rettangolare e ogni cattura puntatore dal perimetro
+   visivo dell'area di servizio sopra la mappa Leaflet. */
+.leaflet-overlay-pane svg path.pointer-events-none {
+  pointer-events: none;
+  outline: none;
+}
+
+.leaflet-overlay-pane svg path.pointer-events-none:focus {
+  outline: none;
+}
+
+/* Evita il rettangolo nero di focus sul contenitore interattivo di Leaflet
+   quando la mappa viene cliccata con il mouse. */
+.service-map-container,
+.service-map-container:focus,
+.service-map-container:focus-visible,
+.service-map-container .leaflet-container,
+.service-map-container .leaflet-container:focus,
+.service-map-container .leaflet-container:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}

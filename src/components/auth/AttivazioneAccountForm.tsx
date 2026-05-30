@@ -101,17 +101,6 @@ export default function AttivazioneAccountForm({
     }));
   }
 
-  // Torna alla schermata codice mantenendo email e codice visibili all'utente.
-  function tornaAllaVerificaCodice(): void {
-    setMessaggio(null);
-    setFaseForm("codice");
-    setFormData((currentData) => ({
-      ...currentData,
-      nuovaPassword: "",
-      confermaNuovaPassword: "",
-    }));
-  }
-
   // Invia la fase corrente all'endpoint configurato dalla pagina specifica.
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -337,16 +326,6 @@ export default function AttivazioneAccountForm({
                   ? "Conferma codice"
                   : "Salva password e accedi"}
           </button>
-
-          {faseForm === "password" && !isRedirecting ? (
-            <button
-              type="button"
-              onClick={tornaAllaVerificaCodice}
-              className="inline-flex w-full items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
-            >
-              Modifica codice
-            </button>
-          ) : null}
         </div>
       </form>
 

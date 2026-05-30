@@ -46,3 +46,28 @@ export type AreaServizio = {
   colore: string;
   punti: PuntoAreaServizio[];
 };
+
+// Classificazione minima delle strade per disegnare una mappa urbana mock
+// con gerarchie visive diverse tra assi principali e strade secondarie.
+export type TipoStrada = "principale" | "secondaria" | "locale";
+
+// Tratto stradale cartografico usato solo per la rappresentazione della mappa.
+export type StradaMappa = {
+  id: string;
+  nome: string;
+  tipo: TipoStrada;
+  punti: Coordinate[];
+  etichettaPosizione: Coordinate;
+};
+
+// Punto di interesse visibile sulla mappa con etichetta pubblica.
+export type PuntoInteresseMappa = Coordinate & {
+  id: string;
+  nome: string;
+  categoria: "campus" | "parcheggio" | "piazza" | "stazione" | "parco" | "ospedale";
+};
+
+// Posizione mock dell'utente o dell'osservatore da mostrare in mappa.
+export type PosizioneUtenteMappa = Coordinate & {
+  etichetta: string;
+};
