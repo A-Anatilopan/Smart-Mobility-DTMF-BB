@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import AreaServizioCard from "@/components/mappa/AreaServizioCard";
-import MezzoCard from "@/components/mappa/MezzoCard";
+import ListaMezziFiltrabile from "@/components/mappa/ListaMezziFiltrabile";
 import { areeServizioMock, mezziMock } from "@/lib/mappa/mock-data";
 
 // Metadati pubblici della prima schermata del modulo M-02.
@@ -112,11 +112,11 @@ export default function MezziPage() {
             </p>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-2">
-            {mezziDisponibili.map((mezzo) => (
-              <MezzoCard key={mezzo.id} mezzo={mezzo} />
-            ))}
-          </div>
+          <ListaMezziFiltrabile
+            mezzi={mezziDisponibili}
+            modalita="utente"
+            messaggioVuoto="Prova a cambiare tipo mezzo o patente richiesta per visualizzare altre soluzioni disponibili."
+          />
         </section>
       </div>
     </main>

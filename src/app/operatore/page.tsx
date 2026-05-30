@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import LogoutButton from "@/components/auth/LogoutButton";
 import AreaServizioCard from "@/components/mappa/AreaServizioCard";
+import ListaMezziFiltrabile from "@/components/mappa/ListaMezziFiltrabile";
 import MezzoCard from "@/components/mappa/MezzoCard";
 import { areeServizioMock, mezziMock } from "@/lib/mappa/mock-data";
 import { RUOLI } from "@/lib/ruoli";
@@ -266,11 +267,11 @@ export default async function DashboardOperatorePage() {
             </p>
           </div>
 
-          <div className="grid gap-5 xl:grid-cols-3">
-            {mezziMock.map((mezzo) => (
-              <MezzoCard key={mezzo.id} mezzo={mezzo} />
-            ))}
-          </div>
+          <ListaMezziFiltrabile
+            mezzi={mezziMock}
+            modalita="operatore"
+            messaggioVuoto="Prova a cambiare stato o tipo mezzo per ritrovare i veicoli che vuoi monitorare."
+          />
         </section>
 
         {/* Le aree aiutano a leggere la distribuzione del servizio prima della futura mappa interattiva. */}
