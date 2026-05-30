@@ -41,6 +41,31 @@ const LABEL_PATENTE: Record<CategoriaPatenteRichiesta, string> = {
   B: "B",
 };
 
+// Testi diversi per ruolo: aiutano a leggere i risultati in modo piu naturale.
+const TESTI_RUOLO = {
+  utente: {
+    descrizione:
+      "Affina la ricerca per trovare piu velocemente il mezzo giusto per il tuo spostamento.",
+    risultatiSingolare: "mezzo disponibile compatibile con la tua selezione",
+    risultatiPlurale: "mezzi disponibili compatibili con la tua selezione",
+    campione: "mezzi disponibili nel campione attuale",
+  },
+  operatore: {
+    descrizione:
+      "Usa i filtri per isolare rapidamente i mezzi da monitorare o da prendere in carico.",
+    risultatiSingolare: "mezzo corrisponde ai filtri operativi",
+    risultatiPlurale: "mezzi corrispondono ai filtri operativi",
+    campione: "mezzi monitorati nel campione operativo",
+  },
+  amministrazione: {
+    descrizione:
+      "Usa i filtri per leggere il campione flotta in modo piu mirato e comparabile.",
+    risultatiSingolare: "mezzo rientra nei criteri selezionati",
+    risultatiPlurale: "mezzi rientrano nei criteri selezionati",
+    campione: "mezzi osservati nel campione istituzionale",
+  },
+} as const;
+
 // Lista condivisa di filtri riutilizzabile nelle diverse viste del modulo M-02.
 export default function ListaMezziFiltrabile({
   mezzi,
@@ -52,6 +77,7 @@ export default function ListaMezziFiltrabile({
   const [statoSelezionato, setStatoSelezionato] = useState<string>("TUTTI");
   const [patenteSelezionata, setPatenteSelezionata] =
     useState<string>("TUTTE");
+  const [areaSelezionata, setAreaSelezionata] = useState<string>("TUTTE");
 
   const ricercaDifferita = useDeferredValue(ricerca);
   const tipiDisponibili = Array.from(new Set(mezzi.map((mezzo) => mezzo.tipo)));
@@ -61,11 +87,15 @@ export default function ListaMezziFiltrabile({
   const patentiDisponibili = Array.from(
     new Set(mezzi.map((mezzo) => mezzo.patenteRichiesta)),
   );
+  const areeDisponibili = Array.from(
+    new Set(mezzi.map((mezzo) => mezzo.areaServizioNome)),
+  );
   const haFiltriAttivi =
     ricerca.trim().length > 0 ||
     tipoSelezionato !== "TUTTI" ||
     statoSelezionato !== "TUTTI" ||
-    patenteSelezionata !== "TUTTE";
+    patenteSelezionata !== "TUTTE" ||
+    areaSelezionata !== "TUTTE";
 
   const mezziFiltrati = mezzi.filter((mezzo) => {
     const query = ricercaDifferita.trim().toLowerCase();
@@ -80,13 +110,63 @@ export default function ListaMezziFiltrabile({
     const combaciaPatente =
       patenteSelezionata === "TUTTE" ||
       mezzo.patenteRichiesta === patenteSelezionata;
+    const combaciaArea =
+      areaSelezionata === "TUTTE" || mezzo.areaServizioNome === areaSelezionata;
 
     if (modalita === "utente") {
       return combaciaRicerca && combaciaTipo && combaciaPatente;
     }
 
-    return combaciaRicerca && combaciaTipo && combaciaStato;
+    return combaciaRicerca && combaciaTipo && combaciaStato && combaciaArea;
   });
+
+  const testoRisultati =
+    mezziFiltrati.length === 1
+      ? TESTI_RUOLO[modalita].risultatiSingolare
+      : TESTI_RUOLO[modalita].risultatiPlurale;
+  const riepilogoCampione = `${mezziFiltrati.length} di ${mezzi.length} ${TESTI_RUOLO[modalita].campione}`;
+
+  // Ogni chip consente di rimuovere rapidamente un filtro senza azzerare l'intera ricerca.
+  const filtriAttivi = [
+    tipoSelezionato !== "TUTTI"
+      ? {
+          id: "tipo",
+          label: `Tipo: ${tipoSelezionato}`,
+          onRemove: () => setTipoSelezionato("TUTTI"),
+        }
+      : null,
+    modalita === "utente" && patenteSelezionata !== "TUTTE"
+      ? {
+          id: "patente",
+          label: `Patente: ${patenteSelezionata}`,
+          onRemove: () => setPatenteSelezionata("TUTTE"),
+        }
+      : null,
+    modalita !== "utente" && statoSelezionato !== "TUTTI"
+      ? {
+          id: "stato",
+          label: `Stato: ${LABEL_STATO[statoSelezionato as StatoMezzo]}`,
+          onRemove: () => setStatoSelezionato("TUTTI"),
+        }
+      : null,
+    modalita !== "utente" && areaSelezionata !== "TUTTE"
+      ? {
+          id: "area",
+          label: `Area: ${areaSelezionata}`,
+          onRemove: () => setAreaSelezionata("TUTTE"),
+        }
+      : null,
+    ricerca.trim().length > 0
+      ? {
+          id: "ricerca",
+          label: `Ricerca: ${ricerca.trim()}`,
+          onRemove: () => setRicerca(""),
+        }
+      : null,
+  ].filter(
+    (filtro): filtro is { id: string; label: string; onRemove: () => void } =>
+      filtro !== null,
+  );
 
   // Ripristina i filtri iniziali senza costringere l'utente a cancellare ogni campo a mano.
   function resettaFiltri(): void {
@@ -94,6 +174,7 @@ export default function ListaMezziFiltrabile({
     setTipoSelezionato("TUTTI");
     setStatoSelezionato("TUTTI");
     setPatenteSelezionata("TUTTE");
+    setAreaSelezionata("TUTTE");
   }
 
   return (
@@ -102,12 +183,13 @@ export default function ListaMezziFiltrabile({
         <div className="mb-4 flex flex-col gap-3 border-b border-slate-100 pb-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-slate-950">
-              {mezziFiltrati.length}{" "}
-              {mezziFiltrati.length === 1 ? "mezzo trovato" : "mezzi trovati"}
+              {mezziFiltrati.length} {testoRisultati}
             </p>
             <p className="text-sm leading-6 text-slate-600">
-              Affina la consultazione usando i filtri disponibili per questa
-              vista.
+              {TESTI_RUOLO[modalita].descrizione}
+            </p>
+            <p className="text-xs font-medium uppercase tracking-[0.18em] text-slate-400">
+              {riepilogoCampione}
             </p>
           </div>
 
@@ -121,7 +203,25 @@ export default function ListaMezziFiltrabile({
           </button>
         </div>
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        {filtriAttivi.length > 0 ? (
+          <div className="mb-4 flex flex-wrap gap-2 border-b border-slate-100 pb-4">
+            {filtriAttivi.map((filtro) => (
+              <button
+                key={filtro.id}
+                type="button"
+                onClick={filtro.onRemove}
+                className="inline-flex items-center gap-2 rounded-full border border-teal-200 bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800 transition hover:border-teal-300 hover:bg-teal-100"
+              >
+                <span>{filtro.label}</span>
+                <span aria-hidden="true" className="text-[11px] leading-none">
+                  x
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : null}
+
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
           <div className="space-y-2 xl:col-span-2">
             <label
               htmlFor={`ricerca-${modalita}`}
@@ -153,8 +253,8 @@ export default function ListaMezziFiltrabile({
               className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
             >
               <option value="TUTTI">Tutti</option>
-              {tipiDisponibili.map((tipo) => (
-                <option key={tipo} value={tipo}>
+              {tipiDisponibili.map((tipo, index) => (
+                <option key={`tipo-${tipo}-${index}`} value={tipo}>
                   {LABEL_TIPO[tipo]}
                 </option>
               ))}
@@ -176,35 +276,62 @@ export default function ListaMezziFiltrabile({
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
               >
                 <option value="TUTTE">Tutte</option>
-                {patentiDisponibili.map((patente) => (
-                  <option key={patente} value={patente}>
+                {patentiDisponibili.map((patente, index) => (
+                  <option
+                    key={`patente-${patente}-${index}`}
+                    value={patente}
+                  >
                     {LABEL_PATENTE[patente]}
                   </option>
                 ))}
               </select>
             </div>
           ) : (
-            <div className="space-y-2">
-              <label
-                htmlFor={`stato-${modalita}`}
-                className="text-sm font-semibold text-slate-700"
-              >
-                Stato del mezzo
-              </label>
-              <select
-                id={`stato-${modalita}`}
-                value={statoSelezionato}
-                onChange={(event) => setStatoSelezionato(event.target.value)}
-                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-              >
-                <option value="TUTTI">Tutti</option>
-                {statiDisponibili.map((stato) => (
-                  <option key={stato} value={stato}>
-                    {LABEL_STATO[stato]}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <>
+              <div className="space-y-2">
+                <label
+                  htmlFor={`stato-${modalita}`}
+                  className="text-sm font-semibold text-slate-700"
+                >
+                  Stato del mezzo
+                </label>
+                <select
+                  id={`stato-${modalita}`}
+                  value={statoSelezionato}
+                  onChange={(event) => setStatoSelezionato(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                >
+                  <option value="TUTTI">Tutti</option>
+                  {statiDisponibili.map((stato, index) => (
+                    <option key={`stato-${stato}-${index}`} value={stato}>
+                      {LABEL_STATO[stato]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label
+                  htmlFor={`area-${modalita}`}
+                  className="text-sm font-semibold text-slate-700"
+                >
+                  Area di servizio
+                </label>
+                <select
+                  id={`area-${modalita}`}
+                  value={areaSelezionata}
+                  onChange={(event) => setAreaSelezionata(event.target.value)}
+                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                >
+                  <option value="TUTTE">Tutte</option>
+                  {areeDisponibili.map((area, index) => (
+                    <option key={`area-${area}-${index}`} value={area}>
+                      {area}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </>
           )}
         </div>
       </div>

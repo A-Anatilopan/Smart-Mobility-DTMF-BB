@@ -14,6 +14,8 @@ export const mezziMock: Mezzo[] = [
     longitudine: 16.8719,
     posti: 1,
     patenteRichiesta: "Nessuna",
+    areaServizioId: "area-centro",
+    areaServizioNome: "Centro Cittadino",
   },
   {
     id: "mezzo-002",
@@ -26,6 +28,8 @@ export const mezziMock: Mezzo[] = [
     longitudine: 16.8661,
     posti: 1,
     patenteRichiesta: "AM",
+    areaServizioId: "area-centro",
+    areaServizioNome: "Centro Cittadino",
   },
   {
     id: "mezzo-003",
@@ -38,6 +42,8 @@ export const mezziMock: Mezzo[] = [
     longitudine: 16.8782,
     posti: 4,
     patenteRichiesta: "B",
+    areaServizioId: "area-centro",
+    areaServizioNome: "Centro Cittadino",
   },
   {
     id: "mezzo-004",
@@ -50,6 +56,8 @@ export const mezziMock: Mezzo[] = [
     longitudine: 16.8644,
     posti: 1,
     patenteRichiesta: "AM",
+    areaServizioId: "area-stazione",
+    areaServizioNome: "Zona Stazione",
   },
   {
     id: "mezzo-005",
@@ -62,6 +70,8 @@ export const mezziMock: Mezzo[] = [
     longitudine: 16.8726,
     posti: 1,
     patenteRichiesta: "Nessuna",
+    areaServizioId: "area-stazione",
+    areaServizioNome: "Zona Stazione",
   },
   {
     id: "mezzo-006",
@@ -74,6 +84,8 @@ export const mezziMock: Mezzo[] = [
     longitudine: 16.8831,
     posti: 2,
     patenteRichiesta: "B",
+    areaServizioId: "area-campus",
+    areaServizioNome: "Campus Universitario",
   },
 ];
 

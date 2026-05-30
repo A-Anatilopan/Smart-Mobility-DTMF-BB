@@ -32,6 +32,8 @@ export type Mezzo = Coordinate & {
   batteria: number;
   posti: number;
   patenteRichiesta: CategoriaPatenteRichiesta;
+  areaServizioId: string;
+  areaServizioNome: string;
 };
 
 // Punto di un poligono semplice usato per descrivere l'area coperta dal servizio.

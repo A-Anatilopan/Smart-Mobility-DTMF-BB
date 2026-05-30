@@ -83,6 +83,15 @@ export default function MezzoCard({ mezzo }: MezzoCardProps) {
             {mezzo.latitudine.toFixed(4)}, {mezzo.longitudine.toFixed(4)}
           </p>
         </div>
+
+        <div className="rounded-2xl bg-slate-50 px-4 py-3 sm:col-span-2">
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+            Area di servizio
+          </p>
+          <p className="mt-1 text-sm font-medium text-slate-950">
+            {mezzo.areaServizioNome}
+          </p>
+        </div>
       </div>
     </article>
   );
