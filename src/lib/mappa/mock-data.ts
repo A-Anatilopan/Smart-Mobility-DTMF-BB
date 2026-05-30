@@ -1,0 +1,116 @@
+import type { AreaServizio, Mezzo } from "@/types/mobilita";
+
+// Dataset iniziale del modulo M-02: contiene pochi mezzi realistici
+// per sviluppare UI, logica di consultazione e future integrazioni mappa.
+export const mezziMock: Mezzo[] = [
+  {
+    id: "mezzo-001",
+    codice: "EB-1001",
+    tipo: "E-Bike",
+    modello: "Urban Glide One",
+    stato: "DISPONIBILE",
+    batteria: 92,
+    latitudine: 41.1174,
+    longitudine: 16.8719,
+    posti: 1,
+    patenteRichiesta: "Nessuna",
+  },
+  {
+    id: "mezzo-002",
+    codice: "ES-2044",
+    tipo: "E-Scooter",
+    modello: "Volt Street X",
+    stato: "PRENOTATO",
+    batteria: 67,
+    latitudine: 41.1203,
+    longitudine: 16.8661,
+    posti: 1,
+    patenteRichiesta: "AM",
+  },
+  {
+    id: "mezzo-003",
+    codice: "EC-3007",
+    tipo: "E-Car",
+    modello: "City Move Mini",
+    stato: "IN_USO",
+    batteria: 54,
+    latitudine: 41.1138,
+    longitudine: 16.8782,
+    posti: 4,
+    patenteRichiesta: "B",
+  },
+  {
+    id: "mezzo-004",
+    codice: "ES-2051",
+    tipo: "E-Scooter",
+    modello: "Volt Street X",
+    stato: "IN_PAUSA",
+    batteria: 43,
+    latitudine: 41.1119,
+    longitudine: 16.8644,
+    posti: 1,
+    patenteRichiesta: "AM",
+  },
+  {
+    id: "mezzo-005",
+    codice: "EB-1026",
+    tipo: "E-Bike",
+    modello: "Urban Glide Plus",
+    stato: "IN_MANUTENZIONE",
+    batteria: 18,
+    latitudine: 41.1251,
+    longitudine: 16.8726,
+    posti: 1,
+    patenteRichiesta: "Nessuna",
+  },
+  {
+    id: "mezzo-006",
+    codice: "EC-3014",
+    tipo: "E-Car",
+    modello: "Eco Drive Compact",
+    stato: "NON_DISPONIBILE",
+    batteria: 12,
+    latitudine: 41.1088,
+    longitudine: 16.8831,
+    posti: 2,
+    patenteRichiesta: "B",
+  },
+];
+
+// Aree iniziali molto semplici: servono a modellare il perimetro del servizio
+// prima di introdurre un vero provider mappe o una persistenza su database.
+export const areeServizioMock: AreaServizio[] = [
+  {
+    id: "area-centro",
+    nome: "Centro Cittadino",
+    colore: "#0f766e",
+    punti: [
+      { latitudine: 41.1215, longitudine: 16.8625 },
+      { latitudine: 41.1247, longitudine: 16.8736 },
+      { latitudine: 41.1165, longitudine: 16.8798 },
+      { latitudine: 41.1118, longitudine: 16.8688 },
+    ],
+  },
+  {
+    id: "area-stazione",
+    nome: "Zona Stazione",
+    colore: "#0891b2",
+    punti: [
+      { latitudine: 41.1182, longitudine: 16.8559 },
+      { latitudine: 41.1214, longitudine: 16.8612 },
+      { latitudine: 41.1152, longitudine: 16.8657 },
+      { latitudine: 41.1121, longitudine: 16.8594 },
+    ],
+  },
+  {
+    id: "area-campus",
+    nome: "Campus Universitario",
+    colore: "#7c3aed",
+    punti: [
+      { latitudine: 41.1038, longitudine: 16.8781 },
+      { latitudine: 41.1081, longitudine: 16.8864 },
+      { latitudine: 41.1016, longitudine: 16.8922 },
+      { latitudine: 41.0972, longitudine: 16.8841 },
+    ],
+  },
+];
