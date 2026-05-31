@@ -1,6 +1,4 @@
 import type { Metadata } from "next";
-import AreaServizioCard from "@/components/mappa/AreaServizioCard";
-import ListaMezziFiltrabile from "@/components/mappa/ListaMezziFiltrabile";
 import MappaServizioMock from "@/components/mappa/MappaServizioMock";
 import {
   areeServizioMock,
@@ -85,52 +83,6 @@ export default function MezziPage() {
           modalita="utente"
           posizioneUtente={posizioneUtenteMappaMock}
         />
-
-        {/* Prima sezione: l'utente vede le zone coperte prima di scegliere il mezzo. */}
-        <section className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
-              Aree coperte
-            </p>
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
-              Dove puoi trovare il servizio
-            </h2>
-            <p className="max-w-3xl text-sm leading-6 text-slate-600">
-              In questa prima fase mostriamo le zone principali coperte dal
-              servizio, cosi puoi orientarti rapidamente prima di scegliere il
-              mezzo piu adatto.
-            </p>
-          </div>
-
-          <div className="grid gap-5 lg:grid-cols-3">
-            {areeServizioMock.map((area) => (
-              <AreaServizioCard key={area.id} area={area} />
-            ))}
-          </div>
-        </section>
-
-        {/* Seconda sezione focalizzata sull'esigenza utente di vedere subito i mezzi utilizzabili. */}
-        <section className="space-y-4">
-          <div className="space-y-2">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
-              Disponibili adesso
-            </p>
-            <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
-              Mezzi pronti per il tuo prossimo noleggio
-            </h2>
-            <p className="max-w-3xl text-sm leading-6 text-slate-600">
-              Qui trovi solo i mezzi attualmente disponibili, con le
-              informazioni utili per confrontare modello, tipo, batteria,
-              numero di posti e patente richiesta.
-            </p>
-          </div>
-
-          <ListaMezziFiltrabile
-            mezzi={mezziDisponibili}
-            modalita="utente"
-            messaggioVuoto="Prova a cambiare tipo mezzo o patente richiesta per visualizzare altre soluzioni disponibili."
-          />
-        </section>
       </div>
     </main>
   );
