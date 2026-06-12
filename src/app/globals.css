@@ -47,3 +47,19 @@ body {
   outline: none !important;
   box-shadow: none !important;
 }
+
+/* Rende il popup mezzo piu orizzontale e meno alto, intervenendo anche sul
+   wrapper reale di Leaflet e non solo sul contenuto React interno. */
+.mezzo-popup-compatto .leaflet-popup-content-wrapper {
+  border-radius: 20px;
+}
+
+.mezzo-popup-compatto .leaflet-popup-content {
+  margin: 10px 12px !important;
+  width: 252px !important;
+}
+
+.mezzo-popup-compatto .leaflet-popup-tip {
+  width: 14px;
+  height: 14px;
+}

@@ -1,11 +1,18 @@
 import type { Metadata } from "next";
+import DashboardUtenteNoleggioClient from "@/components/noleggio/DashboardUtenteNoleggioClient";
 import LogoutButton from "@/components/auth/LogoutButton";
-import MappaServizioMock from "@/components/mappa/MappaServizioMock";
 import {
   areeServizioMock,
   mezziMock,
   posizioneUtenteMappaMock,
 } from "@/lib/mappa/mock-data";
+import {
+  trovaCorsaAttivaMezzo,
+  trovaCorsaAttivaUtente,
+  trovaUltimaCorsaTerminataUtente,
+  trovaPrenotazioneAttivaMezzo,
+  trovaPrenotazioneAttivaUtente,
+} from "@/lib/noleggio";
 import { RUOLI } from "@/lib/ruoli";
 import { richiediRuolo } from "@/lib/session";
 
@@ -18,8 +25,46 @@ export const metadata: Metadata = {
 
 export default async function DashboardUtentePage() {
   const utente = await richiediRuolo(RUOLI.UTENTE);
-  const mezziDisponibili = mezziMock.filter(
+  const [prenotazioneAttiva, corsaAttiva, ultimaCorsaTerminata] = await Promise.all([
+    trovaPrenotazioneAttivaUtente(utente.id),
+    trovaCorsaAttivaUtente(utente.id),
+    trovaUltimaCorsaTerminataUtente(utente.id),
+  ]);
+  const mezziDisponibiliMock = mezziMock.filter(
     (mezzo) => mezzo.stato === "DISPONIBILE",
+  );
+  const verificheDisponibilita = await Promise.all(
+    mezziDisponibiliMock.map(async (mezzo) => {
+      const [prenotazioneAttivaMezzo, corsaAttivaMezzo] = await Promise.all([
+        trovaPrenotazioneAttivaMezzo(mezzo.id),
+        trovaCorsaAttivaMezzo(mezzo.id),
+      ]);
+
+      return {
+        mezzo,
+        impegnato: Boolean(prenotazioneAttivaMezzo || corsaAttivaMezzo),
+      };
+    }),
+  );
+  const mezziDisponibili = verificheDisponibilita
+    .filter((verifica) => !verifica.impegnato)
+    .map((verifica) => verifica.mezzo);
+  const mezzoPrenotato = prenotazioneAttiva
+    ? mezziMock.find((mezzo) => mezzo.id === prenotazioneAttiva.mezzoId) ?? null
+    : null;
+  const mezzoInCorsa = corsaAttiva
+    ? mezziMock.find((mezzo) => mezzo.id === corsaAttiva.mezzoId) ?? null
+    : null;
+  const mezzoUltimaCorsaTerminata = ultimaCorsaTerminata
+    ? mezziMock.find((mezzo) => mezzo.id === ultimaCorsaTerminata.mezzoId) ?? null
+    : null;
+  const mezziMappaUtente = [
+    ...mezziDisponibili,
+    ...(mezzoPrenotato ? [mezzoPrenotato] : []),
+    ...(mezzoInCorsa ? [mezzoInCorsa] : []),
+  ].filter(
+    (mezzo, indice, lista) =>
+      lista.findIndex((mezzoCorrente) => mezzoCorrente.id === mezzo.id) === indice,
   );
   const conteggioPerTipo = {
     eBike: mezziDisponibili.filter((mezzo) => mezzo.tipo === "E-Bike").length,
@@ -124,12 +169,37 @@ export default async function DashboardUtentePage() {
           </article>
         </section>
 
-        {/* Prima base cartografica M-02: usa i dati mock senza introdurre provider esterni. */}
-        <MappaServizioMock
+        {/* Questo wrapper client condivide lo stesso stato tra pannello e mappa,
+            cosi il popup del mezzo puo riusare le stesse azioni del noleggio. */}
+        <DashboardUtenteNoleggioClient
           aree={areeServizioMock}
-          mezzi={mezziDisponibili}
-          modalita="utente"
+          mezziMappa={mezziMappaUtente}
+          mezziDisponibili={mezziDisponibili}
           posizioneUtente={posizioneUtenteMappaMock}
+          prenotazioneAttivaIniziale={
+            prenotazioneAttiva
+              ? {
+                  ...prenotazioneAttiva,
+                  mezzo: mezzoPrenotato,
+                }
+              : null
+          }
+          corsaAttivaIniziale={
+            corsaAttiva
+              ? {
+                  ...corsaAttiva,
+                  mezzo: mezzoInCorsa,
+                }
+              : null
+          }
+          ultimaCorsaTerminataIniziale={
+            ultimaCorsaTerminata
+              ? {
+                  ...ultimaCorsaTerminata,
+                  mezzo: mezzoUltimaCorsaTerminata,
+                }
+              : null
+          }
         />
       </div>
     </main>

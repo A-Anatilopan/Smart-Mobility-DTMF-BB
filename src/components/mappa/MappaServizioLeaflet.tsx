@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DivIcon,
   type LatLngBoundsExpression,
@@ -87,13 +87,16 @@ function costruisciBounds({
   mezzi,
   puntiInteresse,
   posizioneUtente,
+  riconsegneRecenti,
 }: Pick<MappaServizioProps, "aree" | "mezzi" | "posizioneUtente"> & {
   puntiInteresse: PuntoInteresseMappa[];
+  riconsegneRecenti: NonNullable<MappaServizioProps["riconsegneRecenti"]>;
 }): LatLngBoundsExpression | null {
   const punti = [
     ...aree.flatMap((area) => area.punti),
     ...mezzi,
     ...puntiInteresse,
+    ...riconsegneRecenti,
     ...(posizioneUtente ? [posizioneUtente] : []),
   ];
 
@@ -112,42 +115,309 @@ function AdattaMappaAiContenuti({
   posizioneCentrale?: Coordinate | null;
 }) {
   const map = useMap();
+  const haGiaPosizionatoLaMappa = useRef(false);
 
   useEffect(() => {
+    if (haGiaPosizionatoLaMappa.current) {
+      return;
+    }
+
     if (posizioneCentrale) {
       map.setView(toLatLng(posizioneCentrale), 15);
+      haGiaPosizionatoLaMappa.current = true;
       return;
     }
 
     if (bounds) {
       map.fitBounds(bounds, { padding: [36, 36] });
+      haGiaPosizionatoLaMappa.current = true;
       return;
     }
 
     map.setView(BARI_CENTRO, 14);
+    haGiaPosizionatoLaMappa.current = true;
   }, [bounds, map, posizioneCentrale]);
 
   return null;
 }
 
-function MezzoPopup({ mezzo }: { mezzo: Mezzo }) {
+function MezzoPopup({
+  mezzo,
+  modalita,
+  noleggioUtente,
+}: {
+  mezzo: Mezzo;
+  modalita: ModalitaMappa;
+  noleggioUtente?: MappaServizioProps["noleggioUtente"];
+}) {
+  const controllerNoleggio = modalita === "utente" ? noleggioUtente ?? null : null;
+  const prenotazioneSulMezzo =
+    controllerNoleggio?.prenotazioneAttiva?.mezzo?.id === mezzo.id;
+  const corsaSulMezzo =
+    controllerNoleggio?.corsaAttiva?.mezzo?.id === mezzo.id;
+  const statoCorsaSulMezzo = corsaSulMezzo
+    ? controllerNoleggio?.corsaAttiva?.stato
+    : null;
+  const puoPrenotare =
+    Boolean(controllerNoleggio) &&
+    mezzo.stato === "DISPONIBILE" &&
+    !prenotazioneSulMezzo &&
+    !corsaSulMezzo;
+  const puoAvviare =
+    Boolean(controllerNoleggio) &&
+    (prenotazioneSulMezzo ||
+      statoCorsaSulMezzo === "IN_PAUSA" ||
+      (mezzo.stato === "DISPONIBILE" &&
+        !(controllerNoleggio?.prenotazioneBloccata ?? false) &&
+        !prenotazioneSulMezzo &&
+        !corsaSulMezzo));
+  const puoMettereInPausa =
+    Boolean(controllerNoleggio) && statoCorsaSulMezzo === "ATTIVA";
+  const puoTerminare =
+    Boolean(controllerNoleggio) &&
+    (statoCorsaSulMezzo === "ATTIVA" || statoCorsaSulMezzo === "IN_PAUSA");
+  const mostraNotaBlocco =
+    controllerNoleggio &&
+    !puoPrenotare &&
+    !puoAvviare &&
+    !puoMettereInPausa &&
+    !puoTerminare &&
+    controllerNoleggio.prenotazioneBloccata;
+
+  const pulsantePrimarioClassName =
+    "inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-950 px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400";
+  const pulsanteSecondarioClassName =
+    "inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-900 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400";
+
   return (
-    <div className="space-y-1 text-sm text-slate-700">
-      <p className="font-semibold text-slate-950">
-        {mezzo.modello} ({mezzo.codice})
-      </p>
-      <p>Tipo: {mezzo.tipo}</p>
-      <p>Stato: {STATO_LABELS[mezzo.stato]}</p>
-      <p>Batteria: {mezzo.batteria}%</p>
-      <p>Posti: {mezzo.posti}</p>
-      <p>Patente: {mezzo.patenteRichiesta}</p>
-      <p>Area: {mezzo.areaServizioNome}</p>
+    <div className="w-[252px] space-y-2 text-[11px] text-slate-700">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <span
+              className="inline-flex h-7 w-7 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-sm"
+              aria-hidden="true"
+            >
+              {TIPO_SIMBOLO[mezzo.tipo]}
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-[12px] font-semibold text-slate-950">
+                {mezzo.modello}
+              </p>
+              <p className="text-[11px] font-medium text-slate-500">
+                {mezzo.codice}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <span
+          className="shrink-0 rounded-full px-2 py-1 text-[10px] font-semibold"
+          style={{
+            backgroundColor: `${STATO_COLORI[mezzo.stato]}20`,
+            color: STATO_COLORI[mezzo.stato],
+          }}
+        >
+          {STATO_LABELS[mezzo.stato]}
+        </span>
+      </div>
+
+      <div className="grid gap-1">
+        <div className="grid grid-cols-2 gap-1">
+          <div className="min-w-0 rounded-md bg-slate-50 px-2 py-1.5">
+            <p className="truncate font-medium text-slate-700">
+              <span aria-hidden="true">🔋</span> Batteria:{" "}
+              <span className="font-semibold text-slate-950">{mezzo.batteria}%</span>
+            </p>
+          </div>
+          <div className="min-w-0 rounded-md bg-slate-50 px-2 py-1.5">
+            <p className="truncate font-medium text-slate-700">
+              <span aria-hidden="true">👥</span> Posti:{" "}
+              <span className="font-semibold text-slate-950">{mezzo.posti}</span>
+            </p>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-1">
+          <div className="min-w-0 rounded-md bg-slate-50 px-2 py-1.5">
+            <p className="truncate font-medium text-slate-700">
+              <span aria-hidden="true">🪪</span> Patente:{" "}
+              <span className="font-semibold text-slate-950">
+                {mezzo.patenteRichiesta}
+              </span>
+            </p>
+          </div>
+          <div className="min-w-0 rounded-md bg-slate-50 px-2 py-1.5">
+            <p className="truncate font-medium text-slate-700">
+              <span aria-hidden="true">🏷</span> Tipo:{" "}
+              <span className="font-semibold text-slate-950">{mezzo.tipo}</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {controllerNoleggio ? (
+        <div className="space-y-2 border-t border-slate-200 pt-2">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+            Azioni sul mezzo
+          </p>
+
+          <div className="grid grid-cols-2 gap-1.5">
+            {puoPrenotare ? (
+              <button
+                type="button"
+                disabled={
+                  controllerNoleggio.prenotazioneBloccata ||
+                  controllerNoleggio.isSubmittingMezzoId !== null ||
+                  controllerNoleggio.isAnnullamentoInCorso ||
+                  controllerNoleggio.isAvvioInCorso ||
+                  controllerNoleggio.isPausaInCorso ||
+                  controllerNoleggio.isTermineInCorso
+                }
+                onClick={() => {
+                  void controllerNoleggio.gestisciPrenotazione(mezzo);
+                }}
+                className={pulsantePrimarioClassName}
+              >
+                <span aria-hidden="true">🕒</span>
+                {controllerNoleggio.isSubmittingMezzoId === mezzo.id
+                  ? "Prenotazione..."
+                  : "Prenota"}
+              </button>
+            ) : null}
+
+            {puoAvviare ? (
+              <button
+                type="button"
+                disabled={
+                  controllerNoleggio.isAvvioInCorso ||
+                  controllerNoleggio.isSubmittingMezzoId !== null ||
+                  controllerNoleggio.isAnnullamentoInCorso ||
+                  controllerNoleggio.isPausaInCorso ||
+                  controllerNoleggio.isTermineInCorso
+                }
+                onClick={() => {
+                  void controllerNoleggio.gestisciAvvioCorsa(
+                    prenotazioneSulMezzo || statoCorsaSulMezzo === "IN_PAUSA"
+                      ? undefined
+                      : mezzo,
+                  );
+                }}
+                className={pulsantePrimarioClassName}
+              >
+                <span aria-hidden="true">▶</span>
+                {controllerNoleggio.isAvvioInCorso
+                  ? "Avvio..."
+                  : "Avvia"}
+              </button>
+            ) : null}
+
+            {puoMettereInPausa ? (
+              <button
+                type="button"
+                disabled={
+                  controllerNoleggio.isPausaInCorso ||
+                  controllerNoleggio.isSubmittingMezzoId !== null ||
+                  controllerNoleggio.isAnnullamentoInCorso ||
+                  controllerNoleggio.isAvvioInCorso ||
+                  controllerNoleggio.isTermineInCorso
+                }
+                onClick={() => {
+                  void controllerNoleggio.gestisciPausaCorsa();
+                }}
+                className={pulsantePrimarioClassName}
+              >
+                <span aria-hidden="true">⏸</span>
+                {controllerNoleggio.isPausaInCorso
+                  ? "Pausa..."
+                  : "Pausa"}
+              </button>
+            ) : null}
+
+            {puoTerminare ? (
+              <button
+                type="button"
+                disabled={
+                  controllerNoleggio.isTermineInCorso ||
+                  controllerNoleggio.isSubmittingMezzoId !== null ||
+                  controllerNoleggio.isAnnullamentoInCorso ||
+                  controllerNoleggio.isAvvioInCorso ||
+                  controllerNoleggio.isPausaInCorso
+                }
+                onClick={() => {
+                  void controllerNoleggio.gestisciTermineCorsa();
+                }}
+                className={pulsanteSecondarioClassName}
+              >
+                <span aria-hidden="true">■</span>
+                {controllerNoleggio.isTermineInCorso
+                  ? "Termine..."
+                  : "Termina"}
+              </button>
+            ) : null}
+
+            {prenotazioneSulMezzo ? (
+              <button
+                type="button"
+                disabled={
+                  controllerNoleggio.isAnnullamentoInCorso ||
+                  controllerNoleggio.isSubmittingMezzoId !== null ||
+                  controllerNoleggio.isAvvioInCorso ||
+                  controllerNoleggio.isPausaInCorso ||
+                  controllerNoleggio.isTermineInCorso
+                }
+                onClick={() => {
+                  void controllerNoleggio.gestisciAnnullamentoPrenotazione();
+                }}
+                className={pulsanteSecondarioClassName}
+              >
+                <span aria-hidden="true">✕</span>
+                {controllerNoleggio.isAnnullamentoInCorso
+                  ? "Annulla..."
+                  : "Annulla"}
+              </button>
+            ) : null}
+          </div>
+
+          {mostraNotaBlocco ? (
+            <p className="text-[11px] leading-4 text-slate-500">
+              Hai gia una prenotazione o una corsa in corso.
+            </p>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   );
 }
 
-function creaIconaMezzo(mezzo: Mezzo): DivIcon {
-  const colore = STATO_COLORI[mezzo.stato];
+function risolviStatoEffettivoMezzo(
+  mezzo: Mezzo,
+  modalita: ModalitaMappa,
+  noleggioUtente?: MappaServizioProps["noleggioUtente"],
+): Mezzo["stato"] {
+  if (modalita !== "utente" || !noleggioUtente) {
+    return mezzo.stato;
+  }
+
+  const prenotazioneSulMezzo =
+    noleggioUtente.prenotazioneAttiva?.mezzo?.id === mezzo.id;
+  const corsaSulMezzo =
+    noleggioUtente.corsaAttiva?.mezzo?.id === mezzo.id;
+
+  if (corsaSulMezzo) {
+    return noleggioUtente.corsaAttiva?.stato === "IN_PAUSA"
+      ? "IN_PAUSA"
+      : "IN_USO";
+  }
+
+  if (prenotazioneSulMezzo) {
+    return "PRENOTATO";
+  }
+
+  return mezzo.stato;
+}
+
+function creaIconaMezzo(stato: Mezzo["stato"], tipo: Mezzo["tipo"]): DivIcon {
+  const colore = STATO_COLORI[stato];
 
   return new DivIcon({
     className: "",
@@ -158,7 +428,7 @@ function creaIconaMezzo(mezzo: Mezzo): DivIcon {
     html: `
       <div style="position:relative;width:38px;height:48px;display:flex;align-items:flex-start;justify-content:center;">
         <div style="width:34px;height:34px;border-radius:9999px;background:#ffffff;border:3px solid ${colore};box-shadow:0 8px 18px rgba(15,23,42,0.22);display:flex;align-items:center;justify-content:center;font-size:18px;line-height:1;">
-          ${TIPO_SIMBOLO[mezzo.tipo]}
+          ${TIPO_SIMBOLO[tipo]}
         </div>
         <div style="position:absolute;left:50%;bottom:5px;width:12px;height:12px;background:#ffffff;border-right:3px solid ${colore};border-bottom:3px solid ${colore};transform:translateX(-50%) rotate(45deg);box-shadow:3px 3px 10px rgba(15,23,42,0.10);"></div>
       </div>
@@ -173,10 +443,33 @@ export default function MappaServizioLeaflet({
   mezzi,
   modalita,
   posizioneUtente = null,
+  noleggioUtente,
+  riconsegneRecenti = [],
 }: MappaServizioProps) {
   const testi = TESTI_MAPPA[modalita];
-  const mezziDisponibili = mezzi.filter((mezzo) => mezzo.stato === "DISPONIBILE");
-  const mezziCritici = mezzi.filter(
+  const [statiDinamiciServer, setStatiDinamiciServer] = useState<
+    Record<string, Mezzo["stato"]>
+  >({});
+  const mezziConStatoEffettivo = useMemo(
+    () =>
+      mezzi.map((mezzo) => ({
+        ...mezzo,
+        stato: risolviStatoEffettivoMezzo(mezzo, modalita, noleggioUtente),
+      })),
+    [mezzi, modalita, noleggioUtente],
+  );
+  const mezziRenderizzati = useMemo(
+    () =>
+      mezziConStatoEffettivo.map((mezzo) => ({
+        ...mezzo,
+        stato: statiDinamiciServer[mezzo.id] ?? mezzo.stato,
+      })),
+    [mezziConStatoEffettivo, statiDinamiciServer],
+  );
+  const mezziDisponibili = mezziRenderizzati.filter(
+    (mezzo) => mezzo.stato === "DISPONIBILE",
+  );
+  const mezziCritici = mezziRenderizzati.filter(
     (mezzo) =>
       mezzo.batteria <= 25 ||
       mezzo.stato === "IN_MANUTENZIONE" ||
@@ -186,12 +479,62 @@ export default function MappaServizioLeaflet({
     () =>
       costruisciBounds({
         aree,
-        mezzi,
+        mezzi: mezziRenderizzati,
         puntiInteresse: puntiInteresseMappaMock,
         posizioneUtente,
+        riconsegneRecenti,
       }),
-    [aree, mezzi, posizioneUtente],
+    [aree, mezziRenderizzati, posizioneUtente, riconsegneRecenti],
   );
+
+  useEffect(() => {
+    if (modalita === "utente" || mezzi.length === 0) {
+      return;
+    }
+
+    let annullata = false;
+
+    async function aggiornaStatiMezzi() {
+      try {
+        const response = await fetch("/api/mezzi/stati", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            mezzoIds: mezzi.map((mezzo) => mezzo.id),
+          }),
+        });
+
+        const result = (await response.json().catch(() => null)) as
+          | { mezzi?: Array<{ id: string; stato: Mezzo["stato"] }> }
+          | null;
+
+        if (!response.ok || !result?.mezzi || annullata) {
+          return;
+        }
+
+        setStatiDinamiciServer(
+          Object.fromEntries(
+            result.mezzi.map((mezzo) => [mezzo.id, mezzo.stato]),
+          ) as Record<string, Mezzo["stato"]>,
+        );
+      } catch {
+        // In caso di errore temporaneo manteniamo l'ultimo stato noto senza
+        // disturbare l'esperienza d'uso della mappa.
+      }
+    }
+
+    void aggiornaStatiMezzi();
+    const intervallo = window.setInterval(() => {
+      void aggiornaStatiMezzi();
+    }, 5000);
+
+    return () => {
+      annullata = true;
+      window.clearInterval(intervallo);
+    };
+  }, [mezzi, modalita]);
 
   return (
     <section className="space-y-5">
@@ -289,20 +632,62 @@ export default function MappaServizioLeaflet({
                 />
               ))}
 
-              {mezzi.map((mezzo) => (
+              {mezziRenderizzati.map((mezzo) => (
                 <Marker
-                  key={mezzo.id}
+                  key={`${mezzo.id}-${mezzo.stato}`}
                   position={toLatLng(mezzo)}
-                  icon={creaIconaMezzo(mezzo)}
+                  icon={creaIconaMezzo(mezzo.stato, mezzo.tipo)}
                 >
-                  <Popup>
-                    <MezzoPopup mezzo={mezzo} />
+                  <Popup
+                    key={`${mezzo.id}-${mezzo.stato}-popup`}
+                    className="mezzo-popup-compatto"
+                    maxWidth={272}
+                    minWidth={248}
+                    closeButton
+                  >
+                    <MezzoPopup
+                      mezzo={mezzo}
+                      modalita={modalita}
+                      noleggioUtente={noleggioUtente}
+                    />
                   </Popup>
                   <Tooltip direction="top" offset={[0, -8]}>
                     {mezzo.tipo} | {mezzo.codice}
                   </Tooltip>
                 </Marker>
               ))}
+
+              {modalita === "operatore"
+                ? riconsegneRecenti.map((riconsegna) => (
+                    <CircleMarker
+                      key={riconsegna.id}
+                      center={toLatLng(riconsegna)}
+                      radius={9}
+                      pathOptions={{
+                        color: "#ffffff",
+                        weight: 2,
+                        fillColor: "#f97316",
+                        fillOpacity: 0.95,
+                      }}
+                    >
+                      <Popup>
+                        <div className="space-y-1 text-sm text-slate-700">
+                          <p className="font-semibold text-slate-950">
+                            {riconsegna.etichetta}
+                          </p>
+                          <p>{riconsegna.descrizione}</p>
+                          <p>
+                            Coordinate: {riconsegna.latitudine.toFixed(5)},{" "}
+                            {riconsegna.longitudine.toFixed(5)}
+                          </p>
+                        </div>
+                      </Popup>
+                      <Tooltip direction="top" offset={[0, -10]}>
+                        {riconsegna.etichetta}
+                      </Tooltip>
+                    </CircleMarker>
+                  ))
+                : null}
 
               {posizioneUtente ? (
                 <CircleMarker
@@ -359,10 +744,25 @@ export default function MappaServizioLeaflet({
                     {label}
                   </span>
                   <span className="text-sm font-semibold text-slate-950">
-                    {mezzi.filter((mezzo) => mezzo.stato === stato).length}
+                    {mezziRenderizzati.filter((mezzo) => mezzo.stato === stato).length}
                   </span>
                 </div>
               ))}
+              {modalita === "operatore" && riconsegneRecenti.length > 0 ? (
+                <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2">
+                  <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                    <span
+                      className="h-3 w-3 rounded-full"
+                      style={{ backgroundColor: "#f97316" }}
+                      aria-hidden="true"
+                    />
+                    Riconsegne recenti
+                  </span>
+                  <span className="text-sm font-semibold text-slate-950">
+                    {riconsegneRecenti.length}
+                  </span>
+                </div>
+              ) : null}
             </div>
           </article>
 

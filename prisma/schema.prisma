@@ -41,6 +41,8 @@ model Utente {
   updatedAt        DateTime  @updatedAt
 
   sessioni         Sessione[]
+  prenotazioni     Prenotazione[]
+  corse            Corsa[]
 
   @@map("utenti")
 }
@@ -55,4 +57,77 @@ model Sessione {
   utente    Utente   @relation(fields: [utenteId], references: [id], onDelete: Cascade)
 
   @@map("sessioni")
+}
+
+// ================================
+// M-03 - PRENOTAZIONE E CORSA
+// Copre la base strutturale per: UC-01, UC-02, UC-03, UC-05, UC-25
+// User Stories future: UT.04, UT.05, UT.06, UT.07, UT.08, OP.05
+// Nota: il mezzo resta ancora un riferimento logico tramite mezzoId, perche
+// la flotta completa non e ancora modellata in Prisma in questa fase.
+// ================================
+
+model Prenotazione {
+  id                 Int       @id @default(autoincrement())
+  codice             String    @unique @db.VarChar(36)
+  utenteId           Int
+  mezzoId            String    @db.VarChar(50)
+  stato              String    @default("ATTIVA") @db.VarChar(30)
+  prenotataAt        DateTime  @default(now())
+  scadeAt            DateTime
+  annullataAt        DateTime?
+  convertitaInCorsaAt DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  utente Utente @relation(fields: [utenteId], references: [id], onDelete: Cascade)
+  corsa  Corsa?
+
+  @@index([utenteId, stato])
+  @@index([mezzoId, stato])
+  @@map("prenotazioni")
+}
+
+model Corsa {
+  id                 Int       @id @default(autoincrement())
+  codice             String    @unique @db.VarChar(36)
+  utenteId           Int
+  mezzoId            String    @db.VarChar(50)
+  prenotazioneId     Int?      @unique
+  stato              String    @default("ATTIVA") @db.VarChar(30)
+  iniziataAt         DateTime  @default(now())
+  // Tiene traccia dell'ultimo momento in cui la corsa e ripartita davvero,
+  // cosi possiamo sommare solo i minuti di utilizzo effettivo.
+  ultimaRipresaAt    DateTime  @default(now())
+  pausaIniziataAt    DateTime?
+  terminataAt        DateTime?
+
+  // Coordinate minime per tenere traccia di inizio/fine corsa senza aprire
+  // ancora il dominio completo di telemetria o storico posizioni.
+  latitudineInizio   Decimal?  @db.Decimal(10, 7)
+  longitudineInizio  Decimal?  @db.Decimal(10, 7)
+  latitudineFine     Decimal?  @db.Decimal(10, 7)
+  longitudineFine    Decimal?  @db.Decimal(10, 7)
+
+  // Questi accumulatori tengono il tempo reale totale in millisecondi.
+  // In questo modo il costo finale viene calcolato sul tempo effettivo e non
+  // sul numero di segmenti aperti/chiusi con arrotondamenti per eccesso.
+  durataUtilizzoMs   Int       @default(0)
+  durataPausaMs      Int       @default(0)
+
+  // I costi sono memorizzati in centesimi per evitare problemi di arrotondamento
+  // nelle fasi iniziali del dominio pagamenti e tariffazione.
+  costoSbloccoCent   Int       @default(0)
+  costoUtilizzoCent  Int       @default(0)
+  costoPausaCent     Int       @default(0)
+  costoTotaleCent    Int       @default(0)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  utente       Utente        @relation(fields: [utenteId], references: [id], onDelete: Cascade)
+  prenotazione Prenotazione? @relation(fields: [prenotazioneId], references: [id], onDelete: SetNull)
+
+  @@index([utenteId, stato])
+  @@index([mezzoId, stato])
+  @@map("corse")
 }

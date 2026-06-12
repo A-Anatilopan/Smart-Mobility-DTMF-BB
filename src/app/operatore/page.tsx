@@ -4,11 +4,15 @@ import AreaServizioCard from "@/components/mappa/AreaServizioCard";
 import ListaMezziFiltrabile from "@/components/mappa/ListaMezziFiltrabile";
 import MappaServizioMock from "@/components/mappa/MappaServizioMock";
 import MezzoCard from "@/components/mappa/MezzoCard";
+import MonitoraggioNoleggioUtente from "@/components/operatore/MonitoraggioNoleggioUtente";
+import StoricoRiconsegneMezzi from "@/components/operatore/StoricoRiconsegneMezzi";
 import {
   areeServizioMock,
   mezziMock,
   posizioneOperatoreMappaMock,
 } from "@/lib/mappa/mock-data";
+import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
+import { trovaUltimeRiconsegneMezzi } from "@/lib/noleggio";
 import { RUOLI } from "@/lib/ruoli";
 import { richiediRuolo } from "@/lib/session";
 
@@ -21,18 +25,35 @@ export const metadata: Metadata = {
 
 export default async function DashboardOperatorePage() {
   const utente = await richiediRuolo(RUOLI.OPERATORE);
-  const mezziConBatteriaBassa = mezziMock.filter(
+  const mezziMonitorati = await risolviMezziConStatoDinamico(mezziMock);
+  const ultimeRiconsegne = await trovaUltimeRiconsegneMezzi(6);
+  const mezziConBatteriaBassa = mezziMonitorati.filter(
     (mezzo) => mezzo.batteria <= 25,
   );
-  const mezziInMovimentoOAttivi = mezziMock.filter((mezzo) =>
+  const mezziInMovimentoOAttivi = mezziMonitorati.filter((mezzo) =>
     ["PRENOTATO", "IN_USO", "IN_PAUSA"].includes(mezzo.stato),
   );
-  const mezziInManutenzione = mezziMock.filter(
+  const mezziInManutenzione = mezziMonitorati.filter(
     (mezzo) => mezzo.stato === "IN_MANUTENZIONE",
   );
-  const mezziNonDisponibili = mezziMock.filter((mezzo) =>
+  const mezziNonDisponibili = mezziMonitorati.filter((mezzo) =>
     ["NON_DISPONIBILE", "IN_MANUTENZIONE"].includes(mezzo.stato),
   );
+  const ultimeRiconsegneConMezzo = ultimeRiconsegne.map((riconsegna) => ({
+    ...riconsegna,
+    mezzo:
+      mezziMonitorati.find((mezzo) => mezzo.id === riconsegna.corsa.mezzoId) ??
+      null,
+  }));
+  const riconsegneRecentiMappa = ultimeRiconsegneConMezzo
+    .filter((riconsegna) => riconsegna.corsa.posizioneFine)
+    .map((riconsegna) => ({
+      id: `riconsegna-${riconsegna.corsa.id}`,
+      etichetta: riconsegna.mezzo?.codice ?? riconsegna.corsa.mezzoId,
+      descrizione: `Lasciato da ${riconsegna.utente.nome} ${riconsegna.utente.cognome}`,
+      latitudine: riconsegna.corsa.posizioneFine!.latitudine,
+      longitudine: riconsegna.corsa.posizioneFine!.longitudine,
+    }));
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(8,145,178,0.14),_transparent_32%),linear-gradient(180deg,_#f8fafc_0%,_#e0f2fe_100%)] px-4 py-10 sm:px-6 lg:px-8">
@@ -62,7 +83,7 @@ export default async function DashboardOperatorePage() {
                   Mezzi monitorati
                 </p>
                 <p className="mt-3 text-3xl font-semibold text-white">
-                  {mezziMock.length}
+                  {mezziMonitorati.length}
                 </p>
               </div>
               <div className="rounded-3xl border border-white/10 bg-white/8 p-5">
@@ -147,12 +168,21 @@ export default async function DashboardOperatorePage() {
           </article>
         </section>
 
+        {/* Primo aggancio reale di M-03 nell'area operatore: permette di
+            monitorare lo stato noleggio di un utente senza uscire dalla dashboard. */}
+        <MonitoraggioNoleggioUtente />
+
+        {/* OP.02 in forma minima ma reale: l'operatore vede subito dove i
+            mezzi sono stati lasciati una volta conclusa la corsa. */}
+        <StoricoRiconsegneMezzi riconsegne={ultimeRiconsegneConMezzo} />
+
         {/* Base cartografica operativa: visualizza l'intero campione flotta su una mappa reale di Bari. */}
         <MappaServizioMock
           aree={areeServizioMock}
-          mezzi={mezziMock}
+          mezzi={mezziMonitorati}
           modalita="operatore"
           posizioneUtente={posizioneOperatoreMappaMock}
+          riconsegneRecenti={riconsegneRecentiMappa}
         />
 
         {/* Questa sezione mette in evidenza le priorita immediate prima della vista completa. */}
@@ -281,7 +311,7 @@ export default async function DashboardOperatorePage() {
           </div>
 
           <ListaMezziFiltrabile
-            mezzi={mezziMock}
+            mezzi={mezziMonitorati}
             modalita="operatore"
             messaggioVuoto="Prova a cambiare stato o tipo mezzo per ritrovare i veicoli che vuoi monitorare."
           />

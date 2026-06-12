@@ -4,6 +4,7 @@ import AreaServizioCard from "@/components/mappa/AreaServizioCard";
 import ListaMezziFiltrabile from "@/components/mappa/ListaMezziFiltrabile";
 import MappaServizioMock from "@/components/mappa/MappaServizioMock";
 import { areeServizioMock, mezziMock } from "@/lib/mappa/mock-data";
+import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
 import { RUOLI } from "@/lib/ruoli";
 import { richiediRuolo } from "@/lib/session";
 
@@ -16,25 +17,26 @@ export const metadata: Metadata = {
 
 export default async function DashboardPubblicaAmministrazionePage() {
   const utente = await richiediRuolo(RUOLI.PUBBLICA_AMMINISTRAZIONE);
-  const mezziDisponibili = mezziMock.filter(
+  const mezziMonitorati = await risolviMezziConStatoDinamico(mezziMock);
+  const mezziDisponibili = mezziMonitorati.filter(
     (mezzo) => mezzo.stato === "DISPONIBILE",
   );
-  const mezziInManutenzione = mezziMock.filter(
+  const mezziInManutenzione = mezziMonitorati.filter(
     (mezzo) => mezzo.stato === "IN_MANUTENZIONE",
   );
-  const mezziCritici = mezziMock.filter((mezzo) => mezzo.batteria <= 25);
+  const mezziCritici = mezziMonitorati.filter((mezzo) => mezzo.batteria <= 25);
   const distribuzioneTipi = [
     {
       label: "E-Bike",
-      valore: mezziMock.filter((mezzo) => mezzo.tipo === "E-Bike").length,
+      valore: mezziMonitorati.filter((mezzo) => mezzo.tipo === "E-Bike").length,
     },
     {
       label: "E-Scooter",
-      valore: mezziMock.filter((mezzo) => mezzo.tipo === "E-Scooter").length,
+      valore: mezziMonitorati.filter((mezzo) => mezzo.tipo === "E-Scooter").length,
     },
     {
       label: "E-Car",
-      valore: mezziMock.filter((mezzo) => mezzo.tipo === "E-Car").length,
+      valore: mezziMonitorati.filter((mezzo) => mezzo.tipo === "E-Car").length,
     },
   ];
   const riepilogoStati = [
@@ -44,7 +46,7 @@ export default async function DashboardPubblicaAmministrazionePage() {
     },
     {
       label: "Prenotati / in uso / in pausa",
-      valore: mezziMock.filter((mezzo) =>
+      valore: mezziMonitorati.filter((mezzo) =>
         ["PRENOTATO", "IN_USO", "IN_PAUSA"].includes(mezzo.stato),
       ).length,
     },
@@ -54,7 +56,7 @@ export default async function DashboardPubblicaAmministrazionePage() {
     },
     {
       label: "Non disponibili",
-      valore: mezziMock.filter((mezzo) => mezzo.stato === "NON_DISPONIBILE")
+      valore: mezziMonitorati.filter((mezzo) => mezzo.stato === "NON_DISPONIBILE")
         .length,
     },
   ];
@@ -87,7 +89,7 @@ export default async function DashboardPubblicaAmministrazionePage() {
                   Mezzi nel campione
                 </p>
                 <p className="mt-3 text-3xl font-semibold text-white">
-                  {mezziMock.length}
+                  {mezziMonitorati.length}
                 </p>
               </div>
               <div className="rounded-3xl border border-white/10 bg-white/8 p-5">
@@ -175,7 +177,7 @@ export default async function DashboardPubblicaAmministrazionePage() {
         {/* Base cartografica istituzionale: usa una mappa reale di Bari con overlay del servizio. */}
         <MappaServizioMock
           aree={areeServizioMock}
-          mezzi={mezziMock}
+          mezzi={mezziMonitorati}
           modalita="amministrazione"
         />
 
@@ -250,7 +252,7 @@ export default async function DashboardPubblicaAmministrazionePage() {
           </div>
 
           <ListaMezziFiltrabile
-            mezzi={mezziMock}
+            mezzi={mezziMonitorati}
             modalita="amministrazione"
             messaggioVuoto="Prova a modificare i filtri per continuare la lettura del campione flotta."
           />
