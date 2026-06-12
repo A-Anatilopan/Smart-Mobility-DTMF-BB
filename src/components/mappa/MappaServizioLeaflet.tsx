@@ -634,12 +634,11 @@ export default function MappaServizioLeaflet({
 
               {mezziRenderizzati.map((mezzo) => (
                 <Marker
-                  key={`${mezzo.id}-${mezzo.stato}`}
+                  key={mezzo.id}
                   position={toLatLng(mezzo)}
                   icon={creaIconaMezzo(mezzo.stato, mezzo.tipo)}
                 >
                   <Popup
-                    key={`${mezzo.id}-${mezzo.stato}-popup`}
                     className="mezzo-popup-compatto"
                     maxWidth={272}
                     minWidth={248}
