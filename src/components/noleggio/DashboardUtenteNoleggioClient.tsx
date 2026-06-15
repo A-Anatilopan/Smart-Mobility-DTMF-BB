@@ -40,12 +40,21 @@ export default function DashboardUtenteNoleggioClient({
     corsaAttivaIniziale,
     ultimaCorsaTerminataIniziale,
   });
+  const mezzoPrenotato = noleggioUtente.prenotazioneAttiva?.mezzo ?? null;
+  const mezzoInCorsa = noleggioUtente.corsaAttiva?.mezzo ?? null;
+  const mezzoDaTenereInVista = mezzoInCorsa ?? mezzoPrenotato;
+  const haNoleggioAttivo = Boolean(
+    noleggioUtente.prenotazioneAttiva || noleggioUtente.corsaAttiva,
+  );
+  const mezziMappaUtente = mezzoDaTenereInVista
+    ? mezziMappa.filter((mezzo) => mezzo.id === mezzoDaTenereInVista.id)
+    : mezziMappa;
 
   return (
     <>
       <MappaServizioMock
         aree={aree}
-        mezzi={mezziMappa}
+        mezzi={mezziMappaUtente}
         modalita="utente"
         posizioneUtente={posizioneUtente}
         noleggioUtente={noleggioUtente}
@@ -56,6 +65,7 @@ export default function DashboardUtenteNoleggioClient({
       <PrenotazioneMezziDisponibili
         mezziDisponibili={mezziDisponibili}
         noleggioUtente={noleggioUtente}
+        haNoleggioAttivo={haNoleggioAttivo}
       />
     </>
   );

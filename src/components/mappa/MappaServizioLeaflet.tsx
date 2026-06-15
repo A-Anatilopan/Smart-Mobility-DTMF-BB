@@ -32,9 +32,9 @@ const TESTI_MAPPA: Record<
 > = {
   utente: {
     soprattitolo: "Mappa servizio",
-    titolo: "Bari in tempo reale sulla cartografia del servizio",
+    titolo: "Scegli il tuo prossimo mezzo direttamente sulla mappa",
     descrizione:
-      "La mappa usa una base reale OpenStreetMap su Bari e mostra aree coperte, mezzi disponibili e posizione utente sullo stesso piano geografico.",
+      "Guarda i mezzi disponibili vicino a te, apri il popup del veicolo che preferisci e gestisci il noleggio senza cambiare schermata.",
   },
   operatore: {
     soprattitolo: "Mappa operativa",
@@ -445,6 +445,8 @@ export default function MappaServizioLeaflet({
   posizioneUtente = null,
   noleggioUtente,
   riconsegneRecenti = [],
+  mostraPuntiChiave,
+  mostraPuntiInteresse = true,
 }: MappaServizioProps) {
   const testi = TESTI_MAPPA[modalita];
   const [statiDinamiciServer, setStatiDinamiciServer] = useState<
@@ -469,12 +471,22 @@ export default function MappaServizioLeaflet({
   const mezziDisponibili = mezziRenderizzati.filter(
     (mezzo) => mezzo.stato === "DISPONIBILE",
   );
+  const conteggioPerTipoUtente = useMemo(
+    () => ({
+      eBike: mezziDisponibili.filter((mezzo) => mezzo.tipo === "E-Bike").length,
+      eScooter: mezziDisponibili.filter((mezzo) => mezzo.tipo === "E-Scooter")
+        .length,
+      eCar: mezziDisponibili.filter((mezzo) => mezzo.tipo === "E-Car").length,
+    }),
+    [mezziDisponibili],
+  );
   const mezziCritici = mezziRenderizzati.filter(
     (mezzo) =>
       mezzo.batteria <= 25 ||
       mezzo.stato === "IN_MANUTENZIONE" ||
       mezzo.stato === "NON_DISPONIBILE",
   );
+  const puntiChiaveVisibili = mostraPuntiChiave ?? modalita !== "utente";
   const bounds = useMemo(
     () =>
       costruisciBounds({
@@ -549,32 +561,77 @@ export default function MappaServizioLeaflet({
           </p>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[420px]">
-          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Aree
-            </p>
-            <p className="mt-1 text-2xl font-semibold text-slate-950">
-              {aree.length}
-            </p>
+        {modalita === "utente" ? (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <div className="flex min-h-[92px] flex-col items-start justify-start gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-5 text-left">
+              <p className="whitespace-nowrap text-left text-[10px] font-semibold uppercase leading-none tracking-[0.06em] text-slate-500">
+                Aree
+              </p>
+              <p className="text-left text-[1.95rem] font-semibold leading-none text-slate-950">
+                {aree.length}
+              </p>
+            </div>
+            <div className="flex min-h-[92px] flex-col items-start justify-start gap-4 rounded-2xl border border-teal-200 bg-teal-50 px-6 py-5 text-left">
+              <p className="whitespace-nowrap text-left text-[10px] font-semibold uppercase leading-none tracking-[0.06em] text-teal-700">
+                Disponibili
+              </p>
+              <p className="text-left text-[1.95rem] font-semibold leading-none text-slate-950">
+                {mezziDisponibili.length}
+              </p>
+            </div>
+            <div className="flex min-h-[92px] flex-col items-start justify-start gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-5 text-left">
+              <p className="whitespace-nowrap text-left text-[10px] font-semibold uppercase leading-none tracking-[0.06em] text-slate-500">
+                E-Bike
+              </p>
+              <p className="text-left text-[1.95rem] font-semibold leading-none text-slate-950">
+                {conteggioPerTipoUtente.eBike}
+              </p>
+            </div>
+            <div className="flex min-h-[92px] flex-col items-start justify-start gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-5 text-left">
+              <p className="whitespace-nowrap text-left text-[10px] font-semibold uppercase leading-none tracking-[0.06em] text-slate-500">
+                E-Scooter
+              </p>
+              <p className="text-left text-[1.95rem] font-semibold leading-none text-slate-950">
+                {conteggioPerTipoUtente.eScooter}
+              </p>
+            </div>
+            <div className="flex min-h-[92px] flex-col items-start justify-start gap-4 rounded-2xl border border-slate-200 bg-white px-6 py-5 text-left">
+              <p className="whitespace-nowrap text-left text-[10px] font-semibold uppercase leading-none tracking-[0.06em] text-slate-500">
+                E-Car
+              </p>
+              <p className="text-left text-[1.95rem] font-semibold leading-none text-slate-950">
+                {conteggioPerTipoUtente.eCar}
+              </p>
+            </div>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Mezzi
-            </p>
-            <p className="mt-1 text-2xl font-semibold text-slate-950">
-              {mezzi.length}
-            </p>
+        ) : (
+          <div className="grid gap-3 sm:grid-cols-3 lg:min-w-[420px]">
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left">
+              <p className="text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Aree
+              </p>
+              <p className="mt-1 text-left text-2xl font-semibold text-slate-950">
+                {aree.length}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left">
+              <p className="text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Mezzi
+              </p>
+              <p className="mt-1 text-left text-2xl font-semibold text-slate-950">
+                {mezzi.length}
+              </p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left">
+              <p className="text-left text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Critici
+              </p>
+              <p className="mt-1 text-left text-2xl font-semibold text-slate-950">
+                {mezziCritici.length}
+              </p>
+            </div>
           </div>
-          <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-              Critici
-            </p>
-            <p className="mt-1 text-2xl font-semibold text-slate-950">
-              {mezziCritici.length}
-            </p>
-          </div>
-        </div>
+        )}
       </div>
 
       <div className="grid items-start gap-5 xl:grid-cols-[1.45fr_0.55fr]">
@@ -582,15 +639,17 @@ export default function MappaServizioLeaflet({
           <div className="flex items-center justify-between border-b border-slate-200 bg-slate-50 px-4 py-3">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                Bari | OpenStreetMap
+                {modalita === "utente" ? "Bari" : "Bari | OpenStreetMap"}
               </p>
               <p className="text-sm font-medium text-slate-700">
-                Cartografia reale con overlay del servizio
+                {modalita === "utente"
+                  ? "Apri un mezzo sulla mappa per prenotarlo o iniziare la corsa"
+                  : "Cartografia reale con overlay del servizio"}
               </p>
             </div>
             {posizioneUtente ? (
               <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                Posizione utente attiva
+                {modalita === "utente" ? "La tua posizione" : "Posizione utente attiva"}
               </span>
             ) : (
               <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
@@ -716,10 +775,11 @@ export default function MappaServizioLeaflet({
                 </CircleMarker>
               ) : null}
             </MapContainer>
-
-            <div className="pointer-events-none absolute right-4 top-4 z-[500] rounded-2xl border border-white/80 bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
-              Bari | strade reali | overlay servizio
-            </div>
+            {modalita !== "utente" ? (
+              <div className="pointer-events-none absolute right-4 top-4 z-[500] rounded-2xl border border-white/80 bg-white/95 px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm">
+                Bari | strade reali | overlay servizio
+              </div>
+            ) : null}
           </div>
         </div>
 
@@ -729,101 +789,118 @@ export default function MappaServizioLeaflet({
               Legenda mezzi
             </p>
             <div className="mt-4 grid gap-2">
-              {Object.entries(STATO_LABELS).map(([stato, label]) => (
-                <div
-                  key={stato}
-                  className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2"
-                >
-                  <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-                    <span
-                      className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: STATO_COLORI[stato as Mezzo["stato"]] }}
-                      aria-hidden="true"
-                    />
-                    {label}
-                  </span>
-                  <span className="text-sm font-semibold text-slate-950">
-                    {mezziRenderizzati.filter((mezzo) => mezzo.stato === stato).length}
-                  </span>
-                </div>
-              ))}
-              {modalita === "operatore" && riconsegneRecenti.length > 0 ? (
+              {modalita === "utente" ? (
                 <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2">
                   <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
                     <span
                       className="h-3 w-3 rounded-full"
-                      style={{ backgroundColor: "#f97316" }}
+                      style={{ backgroundColor: STATO_COLORI.DISPONIBILE }}
                       aria-hidden="true"
                     />
-                    Riconsegne recenti
+                    Disponibili
                   </span>
                   <span className="text-sm font-semibold text-slate-950">
-                    {riconsegneRecenti.length}
+                    {mezziDisponibili.length}
                   </span>
                 </div>
-              ) : null}
-            </div>
-          </article>
-
-          <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.3)]">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
-              Punti chiave
-            </p>
-            <div className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-              <p>
-                La mappa usa cartografia reale di Bari caricata dai tile pubblici
-                OpenStreetMap e non una base illustrata generata a mano.
-              </p>
-              <p>
-                Aree di servizio, mezzi e posizione utente condividono le stesse
-                coordinate geografiche, quindi ogni overlay resta agganciato alla
-                posizione corretta sulla mappa.
-              </p>
-              <p>
-                In questa fase la copertura e rappresentata da un unico grande
-                perimetro urbano di Bari, cosi il servizio appare come una zona
-                continua e non come isole scollegate tra loro.
-              </p>
-              {modalita === "utente" ? (
-                <p>
-                  Mezzi disponibili visibili in questa vista: {mezziDisponibili.length}.
-                  Il marcatore blu rappresenta la tua posizione nel campione attuale.
-                </p>
-              ) : modalita === "operatore" && posizioneUtente ? (
-                <p>
-                  La mappa si apre gia sulla posizione operativa corrente, cosi
-                  l&apos;operatore vede subito l&apos;area in cui si trova mentre
-                  controlla i mezzi sul territorio.
-                </p>
               ) : (
-                <p>
-                  La vista supporta una lettura territoriale piu realistica del
-                  servizio per monitoraggio operativo e istituzionale.
-                </p>
+                <>
+                  {Object.entries(STATO_LABELS).map(([stato, label]) => (
+                    <div
+                      key={stato}
+                      className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2"
+                    >
+                      <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                        <span
+                          className="h-3 w-3 rounded-full"
+                          style={{ backgroundColor: STATO_COLORI[stato as Mezzo["stato"]] }}
+                          aria-hidden="true"
+                        />
+                        {label}
+                      </span>
+                      <span className="text-sm font-semibold text-slate-950">
+                        {mezziRenderizzati.filter((mezzo) => mezzo.stato === stato).length}
+                      </span>
+                    </div>
+                  ))}
+                  {modalita === "operatore" && riconsegneRecenti.length > 0 ? (
+                    <div className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2">
+                      <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
+                        <span
+                          className="h-3 w-3 rounded-full"
+                          style={{ backgroundColor: "#f97316" }}
+                          aria-hidden="true"
+                        />
+                        Riconsegne recenti
+                      </span>
+                      <span className="text-sm font-semibold text-slate-950">
+                        {riconsegneRecenti.length}
+                      </span>
+                    </div>
+                  ) : null}
+                </>
               )}
             </div>
           </article>
 
-          <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.3)]">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
-              Punti di interesse
-            </p>
-            <div className="mt-4 grid gap-2">
-              {puntiInteresseMappaMock.map((punto) => (
-                <div
-                  key={punto.id}
-                  className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2"
-                >
-                  <span className="text-sm font-medium text-slate-700">
-                    {punto.nome}
-                  </span>
-                  <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                    Bari
-                  </span>
-                </div>
-              ))}
-            </div>
-          </article>
+          {puntiChiaveVisibili ? (
+            <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.3)]">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
+                Punti chiave
+              </p>
+              <div className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
+                <p>
+                  La mappa usa cartografia reale di Bari caricata dai tile pubblici
+                  OpenStreetMap e non una base illustrata generata a mano.
+                </p>
+                <p>
+                  Aree di servizio, mezzi e posizione utente condividono le stesse
+                  coordinate geografiche, quindi ogni overlay resta agganciato alla
+                  posizione corretta sulla mappa.
+                </p>
+                <p>
+                  In questa fase la copertura e rappresentata da un unico grande
+                  perimetro urbano di Bari, cosi il servizio appare come una zona
+                  continua e non come isole scollegate tra loro.
+                </p>
+                {modalita === "operatore" && posizioneUtente ? (
+                  <p>
+                    La mappa si apre gia sulla posizione operativa corrente, cosi
+                    l&apos;operatore vede subito l&apos;area in cui si trova mentre
+                    controlla i mezzi sul territorio.
+                  </p>
+                ) : (
+                  <p>
+                    La vista supporta una lettura territoriale piu realistica del
+                    servizio per monitoraggio operativo e istituzionale.
+                  </p>
+                )}
+              </div>
+            </article>
+          ) : null}
+
+          {mostraPuntiInteresse ? (
+            <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.3)]">
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
+                Punti di interesse
+              </p>
+              <div className="mt-4 grid gap-2">
+                {puntiInteresseMappaMock.map((punto) => (
+                  <div
+                    key={punto.id}
+                    className="flex items-center justify-between gap-3 rounded-2xl bg-slate-50 px-3 py-2"
+                  >
+                    <span className="text-sm font-medium text-slate-700">
+                      {punto.nome}
+                    </span>
+                    <span className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                      Bari
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </article>
+          ) : null}
         </div>
       </div>
     </section>

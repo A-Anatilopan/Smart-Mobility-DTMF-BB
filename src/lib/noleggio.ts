@@ -8,6 +8,7 @@ import type {
   CorsaNoleggio,
   MonitoraggioNoleggioUtente,
   PrenotazioneNoleggio,
+  RiepilogoMonitoraggioOperatore,
   RiconsegnaMezzoOperatore,
 } from "@/types/noleggio";
 import type { Coordinate } from "@/types/mobilita";
@@ -227,6 +228,27 @@ export async function trovaUltimaCorsaTerminataUtente(
   return corsa ? mappaCorsaDominio(corsa) : null;
 }
 
+// Recupera lo storico delle corse concluse dell'utente, ordinato dalla piu
+// recente alla piu vecchia. In questa fase basta un elenco lineare che
+// alimenti la prima vera sezione Cronologia lato dashboard.
+export async function trovaStoricoCorseTerminateUtente(
+  utenteId: number,
+  limite: number = 12,
+): Promise<CorsaNoleggio[]> {
+  const corse = await prisma.corsa.findMany({
+    where: {
+      utenteId,
+      stato: "TERMINATA",
+    },
+    orderBy: {
+      terminataAt: "desc",
+    },
+    take: limite,
+  });
+
+  return corse.map(mappaCorsaDominio);
+}
+
 // Recupera le ultime corse terminate con posizione finale valorizzata, cosi
 // l'operatore puo sapere dove i mezzi sono stati lasciati dopo l'uso.
 export async function trovaUltimeRiconsegneMezzi(
@@ -333,6 +355,88 @@ export async function monitoraNoleggioUtente(
     prenotazione: null,
     corsa: null,
   };
+}
+
+// Raccoglie prenotazioni e corse ancora aperte per offrire all'operatore una
+// vista immediata dei noleggi correnti, anche senza ricerca per email.
+export async function trovaRiepilogoMonitoraggioOperatore(
+  limite = 12,
+): Promise<RiepilogoMonitoraggioOperatore[]> {
+  await sincronizzaPrenotazioniScadute();
+
+  const [prenotazioniAttive, corseAperte] = await Promise.all([
+    prisma.prenotazione.findMany({
+      where: {
+        stato: "ATTIVA",
+      },
+      include: {
+        utente: {
+          select: {
+            id: true,
+            nome: true,
+            cognome: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        prenotataAt: "desc",
+      },
+      take: limite,
+    }),
+    prisma.corsa.findMany({
+      where: {
+        stato: {
+          in: ["ATTIVA", "IN_PAUSA"],
+        },
+      },
+      include: {
+        utente: {
+          select: {
+            id: true,
+            nome: true,
+            cognome: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        iniziataAt: "desc",
+      },
+      take: limite,
+    }),
+  ]);
+
+  const prenotazioniMappate: RiepilogoMonitoraggioOperatore[] =
+    prenotazioniAttive.map((prenotazione) => ({
+      utente: prenotazione.utente,
+      statoMonitoraggio: "PRENOTAZIONE_ATTIVA",
+      prenotazione: mappaPrenotazioneDominio(prenotazione),
+      corsa: null,
+    }));
+
+  const corseMappate: RiepilogoMonitoraggioOperatore[] = corseAperte.map(
+    (corsa) => ({
+      utente: corsa.utente,
+      statoMonitoraggio:
+        corsa.stato === "IN_PAUSA" ? "CORSA_IN_PAUSA" : "CORSA_ATTIVA",
+      prenotazione: null,
+      corsa: mappaCorsaDominio(corsa),
+    }),
+  );
+
+  return [...corseMappate, ...prenotazioniMappate]
+    .sort((elementoA, elementoB) => {
+      const dataA = elementoA.corsa
+        ? new Date(elementoA.corsa.iniziataAt).getTime()
+        : new Date(elementoA.prenotazione!.prenotataAt).getTime();
+      const dataB = elementoB.corsa
+        ? new Date(elementoB.corsa.iniziataAt).getTime()
+        : new Date(elementoB.prenotazione!.prenotataAt).getTime();
+
+      return dataB - dataA;
+    })
+    .slice(0, limite);
 }
 
 // Crea una prenotazione minima se l'utente non ha gia prenotazioni o corse attive.

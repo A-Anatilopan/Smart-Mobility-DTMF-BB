@@ -76,6 +76,20 @@ export type MonitoraggioNoleggioUtente = {
   corsa: CorsaNoleggio | null;
 };
 
+// Elenco sintetico usato dall'operatore per vedere in un colpo d'occhio i
+// noleggi ancora aperti, senza partire ogni volta da una ricerca manuale.
+export type RiepilogoMonitoraggioOperatore = {
+  utente: {
+    id: number;
+    nome: string;
+    cognome: string;
+    email: string;
+  };
+  statoMonitoraggio: StatoMonitoraggioNoleggio;
+  prenotazione: PrenotazioneNoleggio | null;
+  corsa: CorsaNoleggio | null;
+};
+
 // Riepilogo sintetico per l'operatore: serve a leggere rapidamente dove un
 // mezzo e stato lasciato a fine corsa e da quale utente proveniva il noleggio.
 export type RiconsegnaMezzoOperatore = {

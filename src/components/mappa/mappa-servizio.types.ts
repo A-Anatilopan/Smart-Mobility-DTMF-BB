@@ -23,4 +23,6 @@ export type MappaServizioProps = {
   posizioneUtente?: PosizioneUtenteMappa | null;
   noleggioUtente?: NoleggioUtenteController;
   riconsegneRecenti?: RiconsegnaRecenteMappa[];
+  mostraPuntiChiave?: boolean;
+  mostraPuntiInteresse?: boolean;
 };

@@ -59,6 +59,7 @@ export type NoleggioUtenteController = {
   prenotazioneAttiva: PrenotazioneAttivaConMezzo | null;
   corsaAttiva: CorsaAttivaConMezzo | null;
   ultimaCorsaTerminata: CorsaTerminataConMezzo | null;
+  riepilogoConclusioneAperto: boolean;
   messaggio: StatoMessaggio;
   isSubmittingMezzoId: string | null;
   isAnnullamentoInCorso: boolean;
@@ -71,6 +72,7 @@ export type NoleggioUtenteController = {
   gestisciAvvioCorsa: (mezzo?: Mezzo) => Promise<void>;
   gestisciPausaCorsa: () => Promise<void>;
   gestisciTermineCorsa: () => Promise<void>;
+  chiudiRiepilogoConclusione: () => void;
   setMessaggio: Dispatch<SetStateAction<StatoMessaggio>>;
   setUltimaCorsaTerminata: Dispatch<
     SetStateAction<CorsaTerminataConMezzo | null>
@@ -95,6 +97,8 @@ export function useNoleggioUtente({
   const [isAvvioInCorso, setIsAvvioInCorso] = useState(false);
   const [isPausaInCorso, setIsPausaInCorso] = useState(false);
   const [isTermineInCorso, setIsTermineInCorso] = useState(false);
+  const [riepilogoConclusioneAperto, setRiepilogoConclusioneAperto] =
+    useState(false);
   const [messaggio, setMessaggio] = useState<StatoMessaggio>(null);
 
   const prenotazioneBloccata = Boolean(prenotazioneAttiva || corsaAttiva);
@@ -460,6 +464,7 @@ export function useNoleggioUtente({
 
       setUltimaCorsaTerminata(corsaTerminata);
       setCorsaAttiva(null);
+      setRiepilogoConclusioneAperto(Boolean(corsaTerminata));
       setMessaggio({
         tipo: "successo",
         testo:
@@ -481,6 +486,7 @@ export function useNoleggioUtente({
     prenotazioneAttiva,
     corsaAttiva,
     ultimaCorsaTerminata,
+    riepilogoConclusioneAperto,
     messaggio,
     isSubmittingMezzoId,
     isAnnullamentoInCorso,
@@ -493,6 +499,9 @@ export function useNoleggioUtente({
     gestisciAvvioCorsa,
     gestisciPausaCorsa,
     gestisciTermineCorsa,
+    chiudiRiepilogoConclusione: () => {
+      setRiepilogoConclusioneAperto(false);
+    },
     setMessaggio,
     setUltimaCorsaTerminata,
   };

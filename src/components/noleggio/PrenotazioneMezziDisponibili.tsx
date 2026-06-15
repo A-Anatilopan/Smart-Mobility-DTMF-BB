@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import type { Mezzo } from "@/types/mobilita";
 import type {
@@ -14,6 +15,7 @@ import {
 type PrenotazioneMezziDisponibiliProps = {
   mezziDisponibili: Mezzo[];
   noleggioUtente: NoleggioUtenteController;
+  haNoleggioAttivo: boolean;
 };
 
 function formattaData(data: Date | string | null): string {
@@ -50,11 +52,14 @@ function formattaDurata(durataMillisecondi: number): string {
 export default function PrenotazioneMezziDisponibili({
   mezziDisponibili,
   noleggioUtente,
+  haNoleggioAttivo,
 }: PrenotazioneMezziDisponibiliProps) {
   const {
     prenotazioneAttiva,
     corsaAttiva,
     ultimaCorsaTerminata,
+    riepilogoConclusioneAperto,
+    chiudiRiepilogoConclusione,
     messaggio,
   } = noleggioUtente;
   const [adesso, setAdesso] = useState(() => Date.now());
@@ -104,30 +109,93 @@ export default function PrenotazioneMezziDisponibili({
     };
   }, [adesso, corsaAttiva]);
 
-  const conteggioPerTipo = {
-    eBike: mezziDisponibili.filter((mezzo) => mezzo.tipo === "E-Bike").length,
-    eScooter: mezziDisponibili.filter((mezzo) => mezzo.tipo === "E-Scooter")
-      .length,
-    eCar: mezziDisponibili.filter((mezzo) => mezzo.tipo === "E-Car").length,
-  };
-
   return (
     <section className="space-y-5">
+      {riepilogoConclusioneAperto && ultimaCorsaTerminata ? (
+        <div className="fixed inset-0 z-[1100] flex items-center justify-center bg-slate-950/45 px-4 py-6">
+          <div className="w-full max-w-3xl rounded-[1.75rem] border border-emerald-200 bg-white p-6 shadow-[0_30px_90px_-38px_rgba(15,23,42,0.45)]">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div className="space-y-2">
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-emerald-700">
+                  Corsa conclusa
+                </p>
+                <h3 className="text-3xl font-semibold tracking-tight text-slate-950">
+                  Il riepilogo finale e gia pronto.
+                </h3>
+                <p className="max-w-2xl text-sm leading-6 text-slate-600">
+                  Hai terminato il noleggio con successo. Qui trovi subito tempo,
+                  costi e mezzo usato, senza dover scorrere tutta la schermata.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  chiudiRiepilogoConclusione();
+                }}
+                className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-900 transition hover:bg-slate-50"
+              >
+                Chiudi
+              </button>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Mezzo
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-950">
+                  {ultimaCorsaTerminata.mezzo
+                    ? `${ultimaCorsaTerminata.mezzo.modello} (${ultimaCorsaTerminata.mezzo.codice})`
+                    : ultimaCorsaTerminata.mezzoId}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Utilizzo
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-950">
+                  {formattaDurata(ultimaCorsaTerminata.durataUtilizzoMs)}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Pausa
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-950">
+                  {formattaDurata(ultimaCorsaTerminata.durataPausaMs)}
+                </p>
+              </div>
+              <div className="rounded-2xl border border-slate-950 bg-slate-950 px-4 py-3 text-white">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200">
+                  Totale
+                </p>
+                <p className="mt-1 text-sm font-semibold">
+                  {formattaImportoCent(ultimaCorsaTerminata.costi.costoTotaleCent)}
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
+
       <div className="space-y-2">
         <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
           Flusso noleggio
         </p>
         <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
-          La mappa e il tuo punto di controllo
+          {haNoleggioAttivo
+            ? "Il tuo noleggio e adesso al centro della schermata"
+            : "La mappa e il tuo punto di controllo"}
         </h2>
         <p className="max-w-3xl text-sm leading-6 text-slate-600">
-          Apri il popup del mezzo direttamente sulla mappa per prenotarlo,
-          avviare la corsa, metterla in pausa o terminarla senza cambiare
-          contesto.
+          {haNoleggioAttivo
+            ? "Quando hai gia un mezzo associato, la dashboard si concentra solo sul noleggio corrente: vedi stato, tempi e costi senza distrazioni."
+            : "Apri il popup del mezzo direttamente sulla mappa per prenotarlo, avviare la corsa, metterla in pausa o terminarla senza cambiare contesto."}
         </p>
       </div>
 
-      <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
+        <div className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
         <article className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.28)]">
           {/* Il riquadro sinistro riassume lo stato corrente cosi l'utente
               capisce subito quale mezzo sta gestendo e cosa deve fare sulla mappa. */}
@@ -260,73 +328,30 @@ export default function PrenotazioneMezziDisponibili({
           ) : ultimaCorsaTerminata ? (
             <div className="mt-4 rounded-3xl border border-emerald-200 bg-emerald-50 p-5">
               <h3 className="text-2xl font-semibold tracking-tight text-slate-950">
-                Corsa terminata
+                Ultima corsa salvata in cronologia
               </h3>
               <p className="mt-2 text-sm leading-6 text-slate-700">
-                Ecco il riepilogo finale della tua ultima corsa conclusa.
+                Tramite questa sezione puoi accedere alla cronologia delle tue ultime corse.
               </p>
               <div className="mt-4 space-y-2 text-sm text-slate-800">
                 <p>
-                  <span className="font-semibold">Codice corsa:</span>{" "}
-                  {ultimaCorsaTerminata.codice}
+                  <span className="font-semibold">Ultima chiusura registrata:</span>{" "}
+                  {formattaData(ultimaCorsaTerminata.terminataAt)}
                 </p>
                 <p>
-                  <span className="font-semibold">Mezzo:</span>{" "}
+                  <span className="font-semibold">Mezzo usato:</span>{" "}
                   {ultimaCorsaTerminata.mezzo
                     ? `${ultimaCorsaTerminata.mezzo.modello} (${ultimaCorsaTerminata.mezzo.codice})`
                     : ultimaCorsaTerminata.mezzoId}
                 </p>
-                <p>
-                  <span className="font-semibold">Inizio:</span>{" "}
-                  {formattaData(ultimaCorsaTerminata.iniziataAt)}
-                </p>
-                <p>
-                  <span className="font-semibold">Termine:</span>{" "}
-                  {formattaData(ultimaCorsaTerminata.terminataAt)}
-                </p>
-                <p>
-                  <span className="font-semibold">Tempo di utilizzo:</span>{" "}
-                  {formattaDurata(ultimaCorsaTerminata.durataUtilizzoMs)}
-                </p>
-                <p>
-                  <span className="font-semibold">Tempo in pausa:</span>{" "}
-                  {formattaDurata(ultimaCorsaTerminata.durataPausaMs)}
-                </p>
               </div>
-
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <div className="rounded-2xl border border-emerald-100 bg-white/80 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Sblocco
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-950">
-                    {formattaImportoCent(ultimaCorsaTerminata.costi.costoSbloccoCent)}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-emerald-100 bg-white/80 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Utilizzo
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-950">
-                    {formattaImportoCent(ultimaCorsaTerminata.costi.costoUtilizzoCent)}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-emerald-100 bg-white/80 px-4 py-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                    Pausa
-                  </p>
-                  <p className="mt-1 text-lg font-semibold text-slate-950">
-                    {formattaImportoCent(ultimaCorsaTerminata.costi.costoPausaCent)}
-                  </p>
-                </div>
-                <div className="rounded-2xl border border-emerald-100 bg-slate-950 px-4 py-3 text-white">
-                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-emerald-200">
-                    Totale
-                  </p>
-                  <p className="mt-1 text-lg font-semibold">
-                    {formattaImportoCent(ultimaCorsaTerminata.costi.costoTotaleCent)}
-                  </p>
-                </div>
+              <div className="mt-5">
+                <Link
+                  href="/dashboard/cronologia"
+                  className="inline-flex items-center justify-center rounded-full bg-slate-950 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800"
+                >
+                  Apri cronologia
+                </Link>
               </div>
             </div>
           ) : (
@@ -358,70 +383,31 @@ export default function PrenotazioneMezziDisponibili({
           ) : null}
         </article>
 
-        <div className="grid gap-4">
+        <div>
           <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.28)]">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
-              Come usare la mappa
+              {haNoleggioAttivo ? "Cosa puoi fare adesso" : "Muoviti in tre passaggi"}
             </p>
             <div className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-              <p>
-                1. Apri un mezzo disponibile sulla mappa e controlla i suoi dati
-                nel popup.
-              </p>
-              <p>
-                2. Usa il pulsante del popup per prenotare, avviare, mettere in
-                pausa o terminare il noleggio.
-              </p>
-              <p>
-                3. Torna qui solo per leggere lo stato attuale e il riepilogo
-                finale della corsa.
-              </p>
-            </div>
-          </article>
-
-          <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.28)]">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
-              Disponibili ora
-            </p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
-              <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  E-Bike
-                </p>
-                <p className="mt-1 text-lg font-semibold text-slate-950">
-                  {conteggioPerTipo.eBike}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  E-Scooter
-                </p>
-                <p className="mt-1 text-lg font-semibold text-slate-950">
-                  {conteggioPerTipo.eScooter}
-                </p>
-              </div>
-              <div className="rounded-2xl bg-slate-50 px-4 py-3">
-                <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
-                  E-Car
-                </p>
-                <p className="mt-1 text-lg font-semibold text-slate-950">
-                  {conteggioPerTipo.eCar}
-                </p>
-              </div>
-            </div>
-          </article>
-
-          <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.28)]">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-teal-700">
-              Regole del flusso
-            </p>
-            <div className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
-              <p>Puoi avere un solo mezzo attivo per volta tra prenotazione e corsa.</p>
-              <p>Durante la corsa puoi alternare pausa e ripresa tutte le volte che servono.</p>
-              <p>
-                Dopo il termine trovi qui il riepilogo completo con sblocco,
-                utilizzo, pausa e totale finale.
-              </p>
+              {haNoleggioAttivo ? (
+                <>
+                  <p>1. La mappa ti mostra solo il mezzo che stai gestendo in questo momento.</p>
+                  <p>2. Apri il suo popup per riprendere la corsa, metterla in pausa oppure terminarla.</p>
+                  <p>3. Tieni d&apos;occhio tempi e costi da questo pannello, senza distrarti con altri veicoli.</p>
+                </>
+              ) : (
+                <>
+                  <p>
+                    1. Apri sulla mappa un mezzo disponibile vicino a te e guarda le sue informazioni.
+                  </p>
+                  <p>
+                    2. Cliccandoci su, puoi prenotarlo oppure iniziare subito il noleggio.
+                  </p>
+                  <p>
+                    3. Quando la corsa parte, questa schermata si aggiorna e segue il tuo noleggio passo dopo passo.
+                  </p>
+                </>
+              )}
             </div>
           </article>
         </div>
