@@ -15,7 +15,21 @@ type ListaMezziFiltrabileProps = {
   mezzi: Mezzo[];
   modalita: ModalitaFiltri;
   messaggioVuoto: string;
+  condizioneServizioSelezionata?: FiltroCondizioneServizio;
+  onCondizioneServizioChange?: (valore: FiltroCondizioneServizio) => void;
 };
+
+export type FiltroCondizioneServizio =
+  | "TUTTE"
+  | "DISPONIBILI"
+  | "PRENOTATI"
+  | "IN_USO"
+  | "IN_PAUSA"
+  | "IN_OSSERVAZIONE"
+  | "BATTERIA_BASSA"
+  | "IN_MANUTENZIONE"
+  | "NON_DISPONIBILI"
+  | "CRITICI";
 
 const LABEL_TIPO: Record<TipoMezzo, string> = {
   "E-Bike": "E-Bike",
@@ -41,6 +55,19 @@ const LABEL_PATENTE: Record<CategoriaPatenteRichiesta, string> = {
   B: "B",
 };
 
+const LABEL_CONDIZIONE_SERVIZIO: Record<FiltroCondizioneServizio, string> = {
+  TUTTE: "Tutte",
+  DISPONIBILI: "Disponibili",
+  PRENOTATI: "Prenotati",
+  IN_USO: "In uso",
+  IN_PAUSA: "In pausa",
+  IN_OSSERVAZIONE: "In osservazione",
+  BATTERIA_BASSA: "Batteria bassa",
+  IN_MANUTENZIONE: "In manutenzione",
+  NON_DISPONIBILI: "Esclusi dal servizio",
+  CRITICI: "Richiedono attenzione",
+};
+
 // Testi diversi per ruolo: aiutano a leggere i risultati in modo piu naturale.
 const TESTI_RUOLO = {
   utente: {
@@ -59,18 +86,67 @@ const TESTI_RUOLO = {
   },
   amministrazione: {
     descrizione:
-      "Usa i filtri per leggere il campione flotta in modo piu mirato e comparabile.",
-    risultatiSingolare: "mezzo rientra nei criteri selezionati",
-    risultatiPlurale: "mezzi rientrano nei criteri selezionati",
+      "Usa i filtri per leggere in modo piu chiaro disponibilita, utilizzo e condizioni del campione flotta.",
+    risultatiSingolare: "mezzo rientra nella condizione di servizio selezionata",
+    risultatiPlurale: "mezzi rientrano nella condizione di servizio selezionata",
     campione: "mezzi osservati nel campione istituzionale",
   },
 } as const;
+
+function combaciaFiltroCondizioneServizio(
+  mezzo: Mezzo,
+  filtroCondizione: FiltroCondizioneServizio,
+): boolean {
+  if (filtroCondizione === "TUTTE") {
+    return true;
+  }
+
+  if (filtroCondizione === "DISPONIBILI") {
+    return mezzo.stato === "DISPONIBILE";
+  }
+
+  if (filtroCondizione === "PRENOTATI") {
+    return mezzo.stato === "PRENOTATO";
+  }
+
+  if (filtroCondizione === "IN_USO") {
+    return mezzo.stato === "IN_USO";
+  }
+
+  if (filtroCondizione === "IN_PAUSA") {
+    return mezzo.stato === "IN_PAUSA";
+  }
+
+  if (filtroCondizione === "IN_OSSERVAZIONE") {
+    return ["PRENOTATO", "IN_USO", "IN_PAUSA"].includes(mezzo.stato);
+  }
+
+  if (filtroCondizione === "BATTERIA_BASSA") {
+    return mezzo.batteria <= 25;
+  }
+
+  if (filtroCondizione === "IN_MANUTENZIONE") {
+    return mezzo.stato === "IN_MANUTENZIONE";
+  }
+
+  if (filtroCondizione === "NON_DISPONIBILI") {
+    return mezzo.stato === "NON_DISPONIBILE";
+  }
+
+  return (
+    mezzo.stato === "IN_MANUTENZIONE" ||
+    mezzo.stato === "NON_DISPONIBILE" ||
+    mezzo.batteria <= 25
+  );
+}
 
 // Lista condivisa di filtri riutilizzabile nelle diverse viste del modulo M-02.
 export default function ListaMezziFiltrabile({
   mezzi,
   modalita,
   messaggioVuoto,
+  condizioneServizioSelezionata,
+  onCondizioneServizioChange,
 }: ListaMezziFiltrabileProps) {
   const [ricerca, setRicerca] = useState("");
   const [tipoSelezionato, setTipoSelezionato] = useState<string>("TUTTI");
@@ -78,6 +154,10 @@ export default function ListaMezziFiltrabile({
   const [patenteSelezionata, setPatenteSelezionata] =
     useState<string>("TUTTE");
   const [areaSelezionata, setAreaSelezionata] = useState<string>("TUTTE");
+  const [condizioneSelezionata, setCondizioneSelezionata] =
+    useState<FiltroCondizioneServizio>("TUTTE");
+  const condizioneServizioEffettiva =
+    condizioneServizioSelezionata ?? condizioneSelezionata;
 
   const ricercaDifferita = useDeferredValue(ricerca);
   const tipiDisponibili = Array.from(new Set(mezzi.map((mezzo) => mezzo.tipo)));
@@ -95,7 +175,8 @@ export default function ListaMezziFiltrabile({
     tipoSelezionato !== "TUTTI" ||
     statoSelezionato !== "TUTTI" ||
     patenteSelezionata !== "TUTTE" ||
-    areaSelezionata !== "TUTTE";
+    areaSelezionata !== "TUTTE" ||
+    condizioneServizioEffettiva !== "TUTTE";
 
   const mezziFiltrati = mezzi.filter((mezzo) => {
     const query = ricercaDifferita.trim().toLowerCase();
@@ -112,9 +193,22 @@ export default function ListaMezziFiltrabile({
       mezzo.patenteRichiesta === patenteSelezionata;
     const combaciaArea =
       areaSelezionata === "TUTTE" || mezzo.areaServizioNome === areaSelezionata;
+    const combaciaCondizioneServizio = combaciaFiltroCondizioneServizio(
+      mezzo,
+      condizioneServizioEffettiva,
+    );
 
     if (modalita === "utente") {
       return combaciaRicerca && combaciaTipo && combaciaPatente;
+    }
+
+    if (modalita === "amministrazione") {
+      return (
+        combaciaRicerca &&
+        combaciaTipo &&
+        combaciaArea &&
+        combaciaCondizioneServizio
+      );
     }
 
     return combaciaRicerca && combaciaTipo && combaciaStato && combaciaArea;
@@ -156,6 +250,20 @@ export default function ListaMezziFiltrabile({
           onRemove: () => setAreaSelezionata("TUTTE"),
         }
       : null,
+    modalita === "amministrazione" && condizioneServizioEffettiva !== "TUTTE"
+      ? {
+          id: "condizione-servizio",
+          label: `Servizio: ${LABEL_CONDIZIONE_SERVIZIO[condizioneServizioEffettiva]}`,
+          onRemove: () => {
+            if (onCondizioneServizioChange) {
+              onCondizioneServizioChange("TUTTE");
+              return;
+            }
+
+            setCondizioneSelezionata("TUTTE");
+          },
+        }
+      : null,
     ricerca.trim().length > 0
       ? {
           id: "ricerca",
@@ -175,6 +283,13 @@ export default function ListaMezziFiltrabile({
     setStatoSelezionato("TUTTI");
     setPatenteSelezionata("TUTTE");
     setAreaSelezionata("TUTTE");
+
+    if (onCondizioneServizioChange) {
+      onCondizioneServizioChange("TUTTE");
+      return;
+    }
+
+    setCondizioneSelezionata("TUTTE");
   }
 
   return (
@@ -221,7 +336,7 @@ export default function ListaMezziFiltrabile({
           </div>
         ) : null}
 
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-6">
           <div className="space-y-2 xl:col-span-2">
             <label
               htmlFor={`ricerca-${modalita}`}
@@ -288,27 +403,29 @@ export default function ListaMezziFiltrabile({
             </div>
           ) : (
             <>
-              <div className="space-y-2">
-                <label
-                  htmlFor={`stato-${modalita}`}
-                  className="text-sm font-semibold text-slate-700"
-                >
-                  Stato del mezzo
-                </label>
-                <select
-                  id={`stato-${modalita}`}
-                  value={statoSelezionato}
-                  onChange={(event) => setStatoSelezionato(event.target.value)}
-                  className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
-                >
-                  <option value="TUTTI">Tutti</option>
-                  {statiDisponibili.map((stato, index) => (
-                    <option key={`stato-${stato}-${index}`} value={stato}>
-                      {LABEL_STATO[stato]}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              {modalita === "operatore" ? (
+                <div className="space-y-2">
+                  <label
+                    htmlFor={`stato-${modalita}`}
+                    className="text-sm font-semibold text-slate-700"
+                  >
+                    Stato del mezzo
+                  </label>
+                  <select
+                    id={`stato-${modalita}`}
+                    value={statoSelezionato}
+                    onChange={(event) => setStatoSelezionato(event.target.value)}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  >
+                    <option value="TUTTI">Tutti</option>
+                    {statiDisponibili.map((stato, index) => (
+                      <option key={`stato-${stato}-${index}`} value={stato}>
+                        {LABEL_STATO[stato]}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
 
               <div className="space-y-2">
                 <label
@@ -331,6 +448,50 @@ export default function ListaMezziFiltrabile({
                   ))}
                 </select>
               </div>
+
+              {modalita === "amministrazione" ? (
+                <div className="space-y-2">
+                  <label
+                    htmlFor={`condizione-servizio-${modalita}`}
+                    className="text-sm font-semibold text-slate-700"
+                  >
+                    Condizione del servizio
+                  </label>
+                  <p className="text-xs leading-5 text-slate-500">
+                    Raggruppa disponibilita, mezzi in uso e casi che richiedono
+                    attenzione amministrativa.
+                  </p>
+                  <select
+                    id={`condizione-servizio-${modalita}`}
+                    value={condizioneServizioEffettiva}
+                    onChange={(event) => {
+                      const nuovoValore =
+                        event.target.value as FiltroCondizioneServizio;
+
+                      if (onCondizioneServizioChange) {
+                        onCondizioneServizioChange(nuovoValore);
+                        return;
+                      }
+
+                      setCondizioneSelezionata(nuovoValore);
+                    }}
+                    className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
+                  >
+                    {(
+                      Object.entries(LABEL_CONDIZIONE_SERVIZIO) as Array<
+                        [FiltroCondizioneServizio, string]
+                      >
+                    ).map(([valore, label]) => (
+                      <option
+                        key={`condizione-servizio-${modalita}-${valore}`}
+                        value={valore}
+                      >
+                        {label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              ) : null}
             </>
           )}
         </div>

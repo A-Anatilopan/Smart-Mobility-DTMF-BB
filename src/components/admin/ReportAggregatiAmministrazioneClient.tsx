@@ -46,7 +46,8 @@ function BarraGrafico({
   massimo,
   valore,
 }: BarraGraficoProps) {
-  const percentuale = massimo > 0 ? Math.max((valore / massimo) * 100, 8) : 0;
+  const percentuale =
+    massimo > 0 && valore > 0 ? Math.max((valore / massimo) * 100, 8) : 0;
 
   return (
     <div className="space-y-2">
@@ -61,13 +62,15 @@ function BarraGrafico({
       </div>
 
       <div className="h-3 overflow-hidden rounded-full bg-slate-100">
-        <div
-          className="h-full rounded-full transition-[width]"
-          style={{
-            background: coloreBarra,
-            width: `${percentuale}%`,
-          }}
-        />
+        {percentuale > 0 ? (
+          <div
+            className="h-full rounded-full transition-[width]"
+            style={{
+              background: coloreBarra,
+              width: `${percentuale}%`,
+            }}
+          />
+        ) : null}
       </div>
     </div>
   );
