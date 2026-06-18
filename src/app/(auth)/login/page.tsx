@@ -8,7 +8,23 @@ export const metadata: Metadata = {
     "Accedi a E-Smart Mobility per utilizzare i servizi di sharing della citta di Zootropolis.",
 };
 
-export default function LoginPage() {
+type LoginPageProps = {
+  searchParams: Promise<{
+    sospeso?: string;
+  }>;
+};
+
+export default async function LoginPage({ searchParams }: LoginPageProps) {
+  const query = await searchParams;
+  const messaggioSistema =
+    query.sospeso === "1"
+      ? {
+          tipo: "errore" as const,
+          testo:
+            "Il tuo account e stato sospeso da un operatore. La sessione e stata chiusa automaticamente.",
+        }
+      : null;
+
   return (
     // Contenitore principale con impostazione coerente alla pagina di registrazione.
     <main className="flex min-h-screen bg-[radial-gradient(circle_at_top,_rgba(15,118,110,0.16),_transparent_35%),linear-gradient(180deg,_#f8fafc_0%,_#ecfeff_100%)] px-4 py-10 sm:px-6 lg:px-8">
@@ -76,7 +92,7 @@ export default function LoginPage() {
               </p>
             </div>
 
-            <LoginForm />
+            <LoginForm messaggioSistema={messaggioSistema} />
           </div>
         </section>
       </div>

@@ -70,6 +70,7 @@ export type MonitoraggioNoleggioUtente = {
     cognome: string;
     email: string;
     ruolo: string;
+    stato: string;
   };
   statoMonitoraggio: StatoMonitoraggioNoleggio;
   prenotazione: PrenotazioneNoleggio | null;

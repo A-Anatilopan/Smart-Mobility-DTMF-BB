@@ -31,6 +31,7 @@ type MezzoSintetico = {
 type MonitoraggioApiResponse = {
   errore?: string;
   messaggio?: string;
+  esito?: string;
   monitoraggio?: MonitoraggioNoleggioUtente & {
     prenotazione: (MonitoraggioNoleggioUtente["prenotazione"] & {
       mezzo?: MezzoSintetico;
@@ -40,6 +41,23 @@ type MonitoraggioApiResponse = {
     }) | null;
   };
 };
+
+type SospensioneApiResponse = {
+  errore?: string;
+  messaggio?: string;
+  esito?: string;
+  utente?: {
+    id: number;
+    nome: string;
+    cognome: string;
+    email: string;
+    ruolo: string;
+    stato: string;
+  } | null;
+  monitoraggio?: MonitoraggioRicerca;
+};
+
+type AzioneAccountOperatore = "sospendi" | "riattiva";
 
 type MonitoraggioAttivoApiResponse = {
   errore?: string;
@@ -190,6 +208,105 @@ function descriviStatoMonitoraggio(
   };
 }
 
+function descriviStatoAccount(stato: string): {
+  etichetta: string;
+  descrizione: string;
+  className: string;
+} {
+  if (stato === "SOSPESO") {
+    return {
+      etichetta: "Account sospeso",
+      descrizione:
+        "L'accesso e bloccato e tutte le sessioni dell'utente sono gia state chiuse.",
+      className: "border-rose-200 bg-rose-50 text-rose-800",
+    };
+  }
+
+  return {
+    etichetta: "Account attivo",
+    descrizione:
+      "L'utente puo ancora accedere al servizio finche l'operatore non applica una sospensione.",
+    className: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  };
+}
+
+function valutaAzioneSospensione(
+  monitoraggio: MonitoraggioRicerca,
+): {
+  consentita: boolean;
+  azione: AzioneAccountOperatore;
+  etichettaBottone: string;
+  titolo: string;
+  descrizione: string;
+} {
+  if (!monitoraggio) {
+    return {
+      consentita: false,
+      azione: "sospendi",
+      etichettaBottone: "Sospendi account",
+      titolo: "Ricerca necessaria",
+      descrizione:
+        "Cerca prima un utente per capire se l'account puo essere sospeso.",
+    };
+  }
+
+  if (!["Utente", "UTENTE"].includes(monitoraggio.utente.ruolo)) {
+    return {
+      consentita: false,
+      azione: "sospendi",
+      etichettaBottone: "Sospendi account",
+      titolo: "Account non sospendibile da qui",
+      descrizione:
+        "Questa azione e riservata agli account utente del servizio e non alle aree operatore o amministrazione.",
+    };
+  }
+
+  if (monitoraggio.utente.stato === "SOSPESO") {
+    return {
+      consentita: true,
+      azione: "riattiva",
+      etichettaBottone: "Riattiva account",
+      titolo: "Account riattivabile",
+      descrizione:
+        "L'accesso e bloccato, ma l'operatore puo rimuovere la sospensione e riportare l'account allo stato attivo.",
+    };
+  }
+
+  if (
+    monitoraggio.statoMonitoraggio === "CORSA_ATTIVA" ||
+    monitoraggio.statoMonitoraggio === "CORSA_IN_PAUSA"
+  ) {
+    return {
+      consentita: false,
+      azione: "sospendi",
+      etichettaBottone: "Sospendi account",
+      titolo: "Sospensione bloccata dalla corsa",
+      descrizione:
+        "Prima bisogna chiudere o risolvere la corsa aperta, altrimenti l'account non puo essere sospeso in modo coerente.",
+    };
+  }
+
+  if (monitoraggio.statoMonitoraggio === "PRENOTAZIONE_ATTIVA") {
+    return {
+      consentita: true,
+      azione: "sospendi",
+      etichettaBottone: "Sospendi account",
+      titolo: "Sospensione con annullamento prenotazione",
+      descrizione:
+        "Se sospendi l'account mentre la prenotazione e ancora aperta, il sistema annulla automaticamente la prenotazione prima di bloccare l'accesso.",
+    };
+  }
+
+  return {
+    consentita: true,
+    azione: "sospendi",
+    etichettaBottone: "Sospendi account",
+    titolo: "Account sospendibile",
+    descrizione:
+      "Non risultano prenotazioni o corse aperte, quindi l'operatore puo sospendere l'accesso in sicurezza.",
+  };
+}
+
 // Questa vista unisce ricerca mirata e panoramica attiva, cosi OP.05 non
 // dipende solo da una email inserita a mano ma offre anche un quadro operativo.
 export default function MonitoraggioNoleggioUtente({
@@ -197,6 +314,7 @@ export default function MonitoraggioNoleggioUtente({
 }: MonitoraggioNoleggioUtenteProps) {
   const [formData, setFormData] = useState<FormDataMonitoraggio>(INITIAL_FORM_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSuspending, setIsSuspending] = useState(false);
   const [messaggio, setMessaggio] = useState<StatoMessaggio>(null);
   const [monitoraggio, setMonitoraggio] = useState<MonitoraggioRicerca>(null);
   const [monitoraggiAttivi, setMonitoraggiAttivi] = useState(
@@ -314,6 +432,15 @@ export default function MonitoraggioNoleggioUtente({
 
   const mezzoDaMostrare =
     monitoraggio?.corsa?.mezzo ?? monitoraggio?.prenotazione?.mezzo;
+  const statoAccount = useMemo(
+    () =>
+      monitoraggio ? descriviStatoAccount(monitoraggio.utente.stato) : null,
+    [monitoraggio],
+  );
+  const azioneSospensione = useMemo(
+    () => valutaAzioneSospensione(monitoraggio),
+    [monitoraggio],
+  );
 
   const corseAperte = useMemo(
     () =>
@@ -379,20 +506,81 @@ export default function MonitoraggioNoleggioUtente({
     };
   }, [corseAperte.length, monitoraggio]);
 
+  async function handleAzioneAccount() {
+    if (!monitoraggio) {
+      return;
+    }
+
+    setMessaggio(null);
+    setIsSuspending(true);
+
+    try {
+      const response = await fetch("/api/operatori/utenti/sospensione", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          utenteId: monitoraggio.utente.id,
+          email: monitoraggio.utente.email,
+          azione: azioneSospensione.azione,
+        }),
+      });
+
+      const result =
+        (await response.json().catch(() => null)) as SospensioneApiResponse | null;
+
+      if (!response.ok) {
+        if (result?.monitoraggio) {
+          setMonitoraggio(result.monitoraggio);
+        }
+
+        setMessaggio({
+          tipo: "errore",
+          testo:
+            result?.errore ??
+            "Operazione account non riuscita. Controlla lo stato corrente e riprova.",
+        });
+        return;
+      }
+
+      if (monitoraggio.utente.email) {
+        await eseguiRicerca(monitoraggio.utente.email, false);
+      }
+
+      await aggiornaMonitoraggiAttivi();
+
+      setMessaggio({
+        tipo: "successo",
+        testo:
+          result?.messaggio ??
+          "Operazione account completata con successo.",
+      });
+    } catch {
+      setMessaggio({
+        tipo: "errore",
+        testo:
+          "Impossibile contattare il server in questo momento. Riprova tra poco.",
+      });
+    } finally {
+      setIsSuspending(false);
+    }
+  }
+
   return (
     <section className="space-y-5">
       <section className="grid gap-5 lg:grid-cols-[0.95fr_1.05fr]">
         <article className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.35)]">
           <div className="space-y-2">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-700">
-              Controllo puntuale
+              Gestione utente
             </p>
             <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
               Cerca un utente specifico
             </h2>
             <p className="max-w-2xl text-sm leading-6 text-slate-600">
-              Usa questa ricerca quando devi verificare al volo se una persona
-              ha una prenotazione aperta oppure una corsa attiva o in pausa.
+              Usa questa ricerca quando devi controllare lo stato noleggio di
+              una persona e capire subito se l&apos;account puo essere sospeso.
             </p>
           </div>
 
@@ -444,7 +632,7 @@ export default function MonitoraggioNoleggioUtente({
             <div className="grid gap-3 sm:grid-cols-2">
               <button
                 type="submit"
-                disabled={isSubmitting}
+                disabled={isSubmitting || isSuspending}
                 className="inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
               >
                 {isSubmitting ? "Ricerca in corso..." : "Verifica stato noleggio"}
@@ -452,7 +640,7 @@ export default function MonitoraggioNoleggioUtente({
 
               <button
                 type="button"
-                disabled={isSubmitting || !ultimaEmailMonitorata}
+                disabled={isSubmitting || isSuspending || !ultimaEmailMonitorata}
                 onClick={() => {
                   if (ultimaEmailMonitorata) {
                     void eseguiRicerca(ultimaEmailMonitorata, true);
@@ -507,6 +695,9 @@ export default function MonitoraggioNoleggioUtente({
                   <p className="mt-1 text-sm text-slate-600">
                     {monitoraggio.utente.email}
                   </p>
+                  <p className="mt-2 text-sm text-slate-500">
+                    Ruolo: {monitoraggio.utente.ruolo}
+                  </p>
                 </div>
 
                 <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
@@ -525,6 +716,59 @@ export default function MonitoraggioNoleggioUtente({
                   </p>
                 </div>
               </div>
+
+              {statoAccount ? (
+                <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
+                  <div
+                    className={`rounded-3xl border px-5 py-4 ${statoAccount.className}`}
+                  >
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em]">
+                      Stato account
+                    </p>
+                    <h3 className="mt-2 text-xl font-semibold tracking-tight">
+                      {statoAccount.etichetta}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6">
+                      {statoAccount.descrizione}
+                    </p>
+                  </div>
+
+                  <div className="rounded-3xl border border-slate-200 bg-slate-50 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Sospensione account
+                    </p>
+                    <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
+                      {azioneSospensione.titolo}
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      {azioneSospensione.descrizione}
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleAzioneAccount();
+                      }}
+                      disabled={
+                        isSubmitting ||
+                        isSuspending ||
+                        !monitoraggio ||
+                        !azioneSospensione.consentita
+                      }
+                      className={`mt-4 inline-flex w-full items-center justify-center rounded-2xl px-5 py-3.5 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:bg-slate-300 disabled:text-slate-500 ${
+                        azioneSospensione.azione === "riattiva"
+                          ? "bg-emerald-600 hover:bg-emerald-500"
+                          : "bg-rose-600 hover:bg-rose-500"
+                      }`}
+                    >
+                      {isSuspending
+                        ? azioneSospensione.azione === "riattiva"
+                          ? "Riattivazione in corso..."
+                          : "Sospensione in corso..."
+                        : azioneSospensione.etichettaBottone}
+                    </button>
+                  </div>
+                </div>
+              ) : null}
 
               {monitoraggio.prenotazione ? (
                 <div className="rounded-3xl border border-amber-200 bg-amber-50 p-5">
@@ -640,7 +884,7 @@ export default function MonitoraggioNoleggioUtente({
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div className="space-y-2">
             <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-700">
-              Vista operativa
+              Gestione Utente e Corse
             </p>
             <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
               Panoramica dei noleggi aperti

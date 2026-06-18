@@ -17,8 +17,8 @@ const VOCI_MENU_OPERATORE: VoceMenuOperatore[] = [
   },
   {
     href: "/operatore/monitoraggio",
-    etichetta: "Monitoraggio noleggio",
-    descrizione: "Ricerca utenti e controllo di prenotazioni e corse attive",
+    etichetta: "Gestione Utente e Corse",
+    descrizione: "Ricerca utenti, sospensione account e controllo noleggi aperti",
   },
   {
     href: "/operatore/priorita-flotta",

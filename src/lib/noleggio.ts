@@ -318,6 +318,7 @@ export async function monitoraNoleggioUtente(
       cognome: true,
       email: true,
       ruolo: true,
+      stato: true,
     },
   });
 

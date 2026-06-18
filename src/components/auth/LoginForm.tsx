@@ -26,6 +26,10 @@ type LoginApiResponse = {
   };
 };
 
+type LoginFormProps = {
+  messaggioSistema?: StatoMessaggio;
+};
+
 // Valori iniziali usati all'apertura della pagina e dopo un login riuscito.
 const INITIAL_FORM_DATA: LoginFormData = {
   email: "",
@@ -41,7 +45,7 @@ function validaForm(data: LoginFormData): string | null {
   return null;
 }
 
-export default function LoginForm() {
+export default function LoginForm({ messaggioSistema = null }: LoginFormProps) {
   // Gli stati locali servono per controllare input, caricamento e feedback utente.
   const router = useRouter();
   const [formData, setFormData] = useState<LoginFormData>(INITIAL_FORM_DATA);
@@ -162,16 +166,16 @@ export default function LoginForm() {
         </div>
 
         {/* Il messaggio compare solo quando c'e un errore o una conferma da mostrare. */}
-        {messaggio ? (
+        {messaggio ?? messaggioSistema ? (
           <div
             className={`rounded-2xl border px-4 py-3 text-sm ${
-              messaggio.tipo === "successo"
+              (messaggio ?? messaggioSistema)?.tipo === "successo"
                 ? "border-emerald-200 bg-emerald-50 text-emerald-800"
                 : "border-rose-200 bg-rose-50 text-rose-700"
             }`}
             aria-live="polite"
           >
-            {messaggio.testo}
+            {(messaggio ?? messaggioSistema)?.testo}
           </div>
         ) : null}
 

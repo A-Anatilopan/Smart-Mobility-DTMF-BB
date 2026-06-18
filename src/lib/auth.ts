@@ -7,6 +7,7 @@ import { prisma } from "./prisma";
 
 const SALT_ROUNDS = 12;
 const DURATA_SESSIONE_ORE = 24;
+export const STATO_ACCOUNT_SOSPESO = "SOSPESO";
 
 // Hasha la password prima di salvarla nel DB
 export async function hashPassword(password: string): Promise<string> {
@@ -56,6 +57,17 @@ export async function verificaSessione(token: string) {
   if (!sessione) return null;
   if (sessione.scadeAt < new Date()) {
     await prisma.sessione.delete({ where: { token } });
+    return null;
+  }
+
+  // Se l'account e stato sospeso da un operatore invalidiamo subito tutte le
+  // sessioni attive, cosi il blocco non resta limitato al solo prossimo login.
+  if (sessione.utente.stato === STATO_ACCOUNT_SOSPESO) {
+    await prisma.sessione.deleteMany({
+      where: {
+        utenteId: sessione.utenteId,
+      },
+    });
     return null;
   }
 

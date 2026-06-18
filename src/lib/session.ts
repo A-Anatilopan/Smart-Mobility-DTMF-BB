@@ -3,6 +3,7 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { prisma } from "@/lib/prisma";
 import { verificaSessione } from "@/lib/auth";
 import {
   normalizzaRuolo,
@@ -18,6 +19,31 @@ export async function richiediUtenteAutenticato() {
 
   if (!token) {
     redirect("/login");
+  }
+
+  const sessioneCorrente = await prisma.sessione.findUnique({
+    where: {
+      token,
+    },
+    include: {
+      utente: {
+        select: {
+          id: true,
+          stato: true,
+        },
+      },
+    },
+  });
+
+  // Se il token appartiene a un account sospeso, chiudiamo subito la sessione
+  // e riportiamo l'utente al login con un messaggio esplicito.
+  if (sessioneCorrente?.utente.stato === "SOSPESO") {
+    await prisma.sessione.deleteMany({
+      where: {
+        utenteId: sessioneCorrente.utente.id,
+      },
+    });
+    redirect("/login?sospeso=1");
   }
 
   const utente = await verificaSessione(token);
