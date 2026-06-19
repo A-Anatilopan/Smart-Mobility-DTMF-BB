@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import MappaServizioMock from "@/components/mappa/MappaServizioMock";
 import PrenotazioneMezziDisponibili from "@/components/noleggio/PrenotazioneMezziDisponibili";
+import ModaleSegnalazioneMezzoUtente from "@/components/segnalazioni/ModaleSegnalazioneMezzoUtente";
 import {
   useNoleggioUtente,
   type CorsaAttivaConMezzo,
@@ -35,6 +37,8 @@ export default function DashboardUtenteNoleggioClient({
   corsaAttivaIniziale,
   ultimaCorsaTerminataIniziale,
 }: DashboardUtenteNoleggioClientProps) {
+  const [mezzoSegnalazioneSelezionato, setMezzoSegnalazioneSelezionato] =
+    useState<Mezzo | null>(null);
   const noleggioUtente = useNoleggioUtente({
     prenotazioneAttivaIniziale,
     corsaAttivaIniziale,
@@ -58,6 +62,9 @@ export default function DashboardUtenteNoleggioClient({
         modalita="utente"
         posizioneUtente={posizioneUtente}
         noleggioUtente={noleggioUtente}
+        onApriSegnalazioneMezzo={(mezzo) => {
+          setMezzoSegnalazioneSelezionato(mezzo);
+        }}
       />
 
       {/* Il pannello riepiloga lo stato del noleggio, ma l'interazione
@@ -67,6 +74,15 @@ export default function DashboardUtenteNoleggioClient({
         noleggioUtente={noleggioUtente}
         haNoleggioAttivo={haNoleggioAttivo}
       />
+
+      {mezzoSegnalazioneSelezionato ? (
+        <ModaleSegnalazioneMezzoUtente
+          mezzo={mezzoSegnalazioneSelezionato}
+          onClose={() => {
+            setMezzoSegnalazioneSelezionato(null);
+          }}
+        />
+      ) : null}
     </>
   );
 }

@@ -22,6 +22,7 @@ export type MappaServizioProps = {
   modalita: ModalitaMappa;
   posizioneUtente?: PosizioneUtenteMappa | null;
   noleggioUtente?: NoleggioUtenteController;
+  onApriSegnalazioneMezzo?: (mezzo: Mezzo) => void;
   riconsegneRecenti?: RiconsegnaRecenteMappa[];
   mostraPuntiChiave?: boolean;
   mostraPuntiInteresse?: boolean;

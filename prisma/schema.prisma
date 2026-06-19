@@ -43,6 +43,7 @@ model Utente {
   sessioni         Sessione[]
   prenotazioni     Prenotazione[]
   corse            Corsa[]
+  segnalazioniMezzo SegnalazioneMezzo[]
 
   @@map("utenti")
 }
@@ -130,4 +131,37 @@ model Corsa {
   @@index([utenteId, stato])
   @@index([mezzoId, stato])
   @@map("corse")
+}
+
+// ================================
+// M-05 - SEGNALAZIONI OPERATIVE
+// Copre la base condivisa per: UC-09, UC-11
+// User Stories future: UT.09, OP.03, OP.04, OP.11
+// Nota: il mezzo continua a essere referenziato in modo logico tramite mezzoId
+// e mezzoCodice, cosi possiamo aprire il dominio segnalazioni senza modellare
+// ancora l'intera flotta in Prisma.
+// ================================
+
+model SegnalazioneMezzo {
+  id               Int      @id @default(autoincrement())
+  codice           String   @unique @db.VarChar(50)
+  origine          String   @default("UTENTE") @db.VarChar(20)
+  utenteId         Int
+  mezzoId          String   @db.VarChar(50)
+  mezzoCodice      String   @db.VarChar(50)
+  categoria        String   @db.VarChar(30)
+  descrizione      String   @db.Text
+  stato            String   @default("APERTA") @db.VarChar(30)
+  presaInCaricoAt  DateTime?
+  risoltaAt        DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  utente Utente @relation(fields: [utenteId], references: [id], onDelete: Cascade)
+
+  @@index([utenteId])
+  @@index([mezzoId])
+  @@index([stato])
+  @@index([mezzoId, stato])
+  @@map("segnalazioni_mezzo")
 }

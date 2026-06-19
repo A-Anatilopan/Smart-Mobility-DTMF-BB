@@ -145,10 +145,12 @@ function MezzoPopup({
   mezzo,
   modalita,
   noleggioUtente,
+  onApriSegnalazioneMezzo,
 }: {
   mezzo: Mezzo;
   modalita: ModalitaMappa;
   noleggioUtente?: MappaServizioProps["noleggioUtente"];
+  onApriSegnalazioneMezzo?: MappaServizioProps["onApriSegnalazioneMezzo"];
 }) {
   const controllerNoleggio = modalita === "utente" ? noleggioUtente ?? null : null;
   const prenotazioneSulMezzo =
@@ -385,6 +387,21 @@ function MezzoPopup({
           ) : null}
         </div>
       ) : null}
+
+      {modalita === "utente" && onApriSegnalazioneMezzo ? (
+        <div className="border-t border-slate-200 pt-2">
+          <button
+            type="button"
+            onClick={() => {
+              onApriSegnalazioneMezzo(mezzo);
+            }}
+            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-semibold text-rose-800 transition hover:bg-rose-100"
+          >
+            <span aria-hidden="true">⚠</span>
+            Segnala un problema
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -444,6 +461,7 @@ export default function MappaServizioLeaflet({
   modalita,
   posizioneUtente = null,
   noleggioUtente,
+  onApriSegnalazioneMezzo,
   riconsegneRecenti = [],
   mostraPuntiChiave,
   mostraPuntiInteresse = true,
@@ -707,6 +725,7 @@ export default function MappaServizioLeaflet({
                       mezzo={mezzo}
                       modalita={modalita}
                       noleggioUtente={noleggioUtente}
+                      onApriSegnalazioneMezzo={onApriSegnalazioneMezzo}
                     />
                   </Popup>
                   <Tooltip direction="top" offset={[0, -8]}>
