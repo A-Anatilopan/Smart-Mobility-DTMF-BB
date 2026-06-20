@@ -19,7 +19,25 @@ type ListaMezziFiltrabileProps = {
   statoIniziale?: string;
   condizioneServizioSelezionata?: FiltroCondizioneServizio;
   onCondizioneServizioChange?: (valore: FiltroCondizioneServizio) => void;
+  sessioniOperativeAttive?: Record<
+    string,
+    {
+      id: number;
+      codice: string;
+      motivo: string;
+      noteApertura: string | null;
+      noteChiusura: string | null;
+      apertaAt: string;
+      operatore: {
+        id: number;
+        nome: string;
+        cognome: string;
+        email: string;
+      };
+    }
+  >;
   onApriSegnalazioneMezzo?: (mezzo: Mezzo) => void;
+  onApriSessioneOperativaMezzo?: (mezzo: Mezzo) => void;
 };
 
 export type FiltroCondizioneServizio =
@@ -179,7 +197,9 @@ export default function ListaMezziFiltrabile({
   statoIniziale,
   condizioneServizioSelezionata,
   onCondizioneServizioChange,
+  sessioniOperativeAttive,
   onApriSegnalazioneMezzo,
+  onApriSessioneOperativaMezzo,
 }: ListaMezziFiltrabileProps) {
   const statoFiltroIniziale = risolviStatoFiltroValido(statoIniziale);
   const [ricerca, setRicerca] = useState(ricercaIniziale ?? "");
@@ -542,8 +562,14 @@ export default function ListaMezziFiltrabile({
             <MezzoCard
               key={mezzo.id}
               mezzo={mezzo}
+              sessioneOperativaAttiva={sessioniOperativeAttive?.[mezzo.id]}
               onApriSegnalazioneMezzo={
                 modalita === "operatore" ? onApriSegnalazioneMezzo : undefined
+              }
+              onApriSessioneOperativaMezzo={
+                modalita === "operatore"
+                  ? onApriSessioneOperativaMezzo
+                  : undefined
               }
             />
           ))}

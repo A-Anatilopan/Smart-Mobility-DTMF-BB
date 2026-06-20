@@ -47,6 +47,7 @@ export async function risolviMezziConStatoDinamico(
     corseAttive,
     corseTerminateConPosizione,
     segnalazioniConImpattoOperativo,
+    sessioniOperativeAttive,
   ] = await Promise.all([
     prisma.prenotazione.findMany({
       where: {
@@ -113,6 +114,17 @@ export async function risolviMezziConStatoDinamico(
         stato: true,
       },
     }),
+    prisma.sessioneOperativaMezzo.findMany({
+      where: {
+        mezzoId: {
+          in: mezzoIds,
+        },
+        stato: "ATTIVA",
+      },
+      select: {
+        mezzoId: true,
+      },
+    }),
   ]);
 
   const mezziPrenotati = new Set(
@@ -126,6 +138,9 @@ export async function risolviMezziConStatoDinamico(
   );
   const mezziInManutenzione = new Set<string>();
   const mezziNonDisponibiliPerSegnalazione = new Set<string>();
+  const mezziConSessioneOperativaAttiva = new Set(
+    sessioniOperativeAttive.map((sessione) => sessione.mezzoId),
+  );
 
   for (const segnalazione of segnalazioniConImpattoOperativo) {
     if (STATI_SEGNALAZIONE_MANUTENTIVA.includes(segnalazione.stato)) {
@@ -169,6 +184,11 @@ export async function risolviMezziConStatoDinamico(
         stato: "IN_MANUTENZIONE",
       };
     } else if (mezziNonDisponibiliPerSegnalazione.has(mezzo.id)) {
+      mezzoRisolto = {
+        ...mezzoRisolto,
+        stato: "NON_DISPONIBILE",
+      };
+    } else if (mezziConSessioneOperativaAttiva.has(mezzo.id)) {
       mezzoRisolto = {
         ...mezzoRisolto,
         stato: "NON_DISPONIBILE",

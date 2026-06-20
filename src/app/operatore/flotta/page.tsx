@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 import FlottaOperatoreClient from "@/components/operatore/FlottaOperatoreClient";
 import HeroSezioneOperatore from "@/components/operatore/HeroSezioneOperatore";
+import RiepilogoSessioniOperativeAttive from "@/components/operatore/RiepilogoSessioniOperativeAttive";
 import { mezziMock } from "@/lib/mappa/mock-data";
 import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
+import { prisma } from "@/lib/prisma";
+import { richiediRuolo } from "@/lib/session";
+import { RUOLI } from "@/lib/ruoli";
 import type { StatoMezzo } from "@/types/mobilita";
 
 export const metadata: Metadata = {
@@ -45,11 +49,71 @@ function risolviStatoFiltroIniziale(
 export default async function OperatoreFlottaPage({
   searchParams,
 }: OperatoreFlottaPageProps) {
-  const mezziMonitorati = await risolviMezziConStatoDinamico(mezziMock);
+  const [operatore, mezziMonitorati, sessioniOperativeAttiveDb] = await Promise.all([
+    richiediRuolo(RUOLI.OPERATORE),
+    risolviMezziConStatoDinamico(mezziMock),
+    prisma.sessioneOperativaMezzo.findMany({
+      where: {
+        stato: "ATTIVA",
+        modalita: "LOCALE",
+      },
+      select: {
+        id: true,
+        codice: true,
+        mezzoId: true,
+        mezzoCodice: true,
+        motivo: true,
+        noteApertura: true,
+        noteChiusura: true,
+        apertaAt: true,
+        operatore: {
+          select: {
+            id: true,
+            nome: true,
+            cognome: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        apertaAt: "desc",
+      },
+    }),
+  ]);
   const query = await searchParams;
   const ricercaIniziale =
     typeof query.ricerca === "string" ? query.ricerca.trim() : "";
   const statoIniziale = risolviStatoFiltroIniziale(query.stato);
+  const sessioniOperativeAttive = Object.fromEntries(
+    sessioniOperativeAttiveDb.map((sessione) => [
+      sessione.mezzoId,
+      {
+        ...sessione,
+        apertaAt: sessione.apertaAt.toISOString(),
+      },
+    ]),
+  );
+  const sessioniOperativeRiepilogo = sessioniOperativeAttiveDb.map(
+    (sessione) => {
+      const mezzo = mezziMonitorati.find(
+        (mezzoCorrente) => mezzoCorrente.id === sessione.mezzoId,
+      );
+
+      return {
+        id: sessione.id,
+        codice: sessione.codice,
+        mezzoId: sessione.mezzoId,
+        mezzoCodice: sessione.mezzoCodice,
+        mezzoModello: mezzo?.modello ?? sessione.mezzoCodice,
+        statoMezzoCorrente: mezzo?.stato ?? "NON_DISPONIBILE",
+        motivo: sessione.motivo,
+        noteApertura: sessione.noteApertura,
+        noteChiusura: sessione.noteChiusura,
+        apertaAt: sessione.apertaAt.toISOString(),
+        operatore: sessione.operatore,
+      };
+    },
+  );
 
   return (
     <>
@@ -69,11 +133,17 @@ export default async function OperatoreFlottaPage({
           </h2>
         </div>
 
+        <RiepilogoSessioniOperativeAttive
+          sessioni={sessioniOperativeRiepilogo}
+          operatoreCorrenteId={operatore.id}
+        />
+
         <FlottaOperatoreClient
           key={`${ricercaIniziale || "vuoto"}::${statoIniziale}`}
           mezzi={mezziMonitorati}
           ricercaIniziale={ricercaIniziale}
           statoIniziale={statoIniziale}
+          sessioniOperativeAttive={sessioniOperativeAttive}
         />
       </section>
     </>

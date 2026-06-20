@@ -74,6 +74,12 @@ type MonitoraggioAttivoApiResponse = {
   >;
 };
 
+type BloccoRemotoApiResponse = {
+  errore?: string;
+  messaggio?: string;
+  corsa?: MonitoraggioNoleggioUtente["corsa"] | null;
+};
+
 type MonitoraggioRicerca = MonitoraggioApiResponse["monitoraggio"] | null;
 type MonitoraggioAttivoConMezzo = NonNullable<
   MonitoraggioAttivoApiResponse["monitoraggi"]
@@ -315,6 +321,14 @@ export default function MonitoraggioNoleggioUtente({
   const [formData, setFormData] = useState<FormDataMonitoraggio>(INITIAL_FORM_DATA);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuspending, setIsSuspending] = useState(false);
+  const [isRemoteBlocking, setIsRemoteBlocking] = useState(false);
+  const [notaBloccoRemoto, setNotaBloccoRemoto] = useState("");
+  const [corsaRemotaInCorsoId, setCorsaRemotaInCorsoId] = useState<number | null>(
+    null,
+  );
+  const [noteBloccoRapido, setNoteBloccoRapido] = useState<
+    Record<number, string>
+  >({});
   const [messaggio, setMessaggio] = useState<StatoMessaggio>(null);
   const [monitoraggio, setMonitoraggio] = useState<MonitoraggioRicerca>(null);
   const [monitoraggiAttivi, setMonitoraggiAttivi] = useState(
@@ -565,6 +579,91 @@ export default function MonitoraggioNoleggioUtente({
     } finally {
       setIsSuspending(false);
     }
+  }
+
+  async function eseguiBloccoRemotoCorsa(input: {
+    corsaId: number;
+    emailUtente: string;
+    notaOperatore: string;
+  }) {
+    const notaPulita = input.notaOperatore.trim();
+
+    if (notaPulita.length < 10) {
+      setMessaggio({
+        tipo: "errore",
+        testo:
+          "Inserisci una nota operativa piu chiara prima di chiudere la corsa da remoto.",
+      });
+      return;
+    }
+
+    setMessaggio(null);
+    setIsRemoteBlocking(true);
+    setCorsaRemotaInCorsoId(input.corsaId);
+
+    try {
+      const response = await fetch(
+        `/api/operatori/corse/${input.corsaId}/blocco-remoto`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            notaOperatore: notaPulita,
+          }),
+        },
+      );
+
+      const result =
+        (await response.json().catch(() => null)) as BloccoRemotoApiResponse | null;
+
+      if (!response.ok) {
+        setMessaggio({
+          tipo: "errore",
+          testo:
+            result?.errore ??
+            "Blocco remoto non riuscito. Controlla lo stato della corsa e riprova.",
+        });
+        return;
+      }
+
+      setNotaBloccoRemoto("");
+      setNoteBloccoRapido((currentValue) => ({
+        ...currentValue,
+        [input.corsaId]: "",
+      }));
+      await eseguiRicerca(input.emailUtente, false);
+      await aggiornaMonitoraggiAttivi();
+
+      setMessaggio({
+        tipo: "successo",
+        testo:
+          result?.messaggio ??
+          "Corsa chiusa da remoto con successo.",
+      });
+    } catch {
+      setMessaggio({
+        tipo: "errore",
+        testo:
+          "Impossibile contattare il server in questo momento. Riprova tra poco.",
+      });
+    } finally {
+      setIsRemoteBlocking(false);
+      setCorsaRemotaInCorsoId(null);
+    }
+  }
+
+  async function handleBloccoRemotoCorsa() {
+    if (!monitoraggio?.corsa) {
+      return;
+    }
+
+    await eseguiBloccoRemotoCorsa({
+      corsaId: monitoraggio.corsa.id,
+      emailUtente: monitoraggio.utente.email,
+      notaOperatore: notaBloccoRemoto,
+    });
   }
 
   return (
@@ -873,6 +972,52 @@ export default function MonitoraggioNoleggioUtente({
                       </div>
                     </div>
                   ) : null}
+
+                  <div className="mt-5 rounded-3xl border border-slate-200 bg-white/85 p-5">
+                    <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">
+                      Blocco remoto assistito
+                    </p>
+                    <h3 className="mt-2 text-xl font-semibold tracking-tight text-slate-950">
+                      Chiudi la corsa a distanza solo quando serve assistenza
+                    </h3>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      Usa questa azione quando l&apos;utente non riesce a
+                      completare la chiusura del noleggio dal proprio flusso.
+                      Il mezzo verra bloccato da remoto, la corsa si chiudera e
+                      l&apos;intervento restera tracciato con la nota operativa.
+                    </p>
+
+                    <div className="mt-4 space-y-2">
+                      <label
+                        className="text-sm font-semibold text-slate-700"
+                        htmlFor="nota-blocco-remoto"
+                      >
+                        Nota operativa
+                      </label>
+                      <textarea
+                        id="nota-blocco-remoto"
+                        value={notaBloccoRemoto}
+                        onChange={(event) =>
+                          setNotaBloccoRemoto(event.target.value)
+                        }
+                        className="min-h-[120px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+                        placeholder="Spiega in breve perche stai chiudendo la corsa da remoto."
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        void handleBloccoRemotoCorsa();
+                      }}
+                      disabled={isSubmitting || isRemoteBlocking || isSuspending}
+                      className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                    >
+                      {isRemoteBlocking
+                        ? "Blocco remoto in corso..."
+                        : "Blocca da remoto e chiudi corsa"}
+                    </button>
+                  </div>
                 </div>
               ) : null}
             </div>
@@ -993,6 +1138,59 @@ export default function MonitoraggioNoleggioUtente({
                             {formattaDurata(dettaglioLive.durataUtilizzoStimata)}
                           </p>
                         </div>
+                      </div>
+
+                      <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 p-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
+                          Assistenza remota
+                        </p>
+                        <p className="mt-2 text-sm leading-6 text-slate-600">
+                          Se l&apos;utente non riesce a chiudere la corsa,
+                          puoi bloccare il mezzo da remoto e terminare il
+                          noleggio direttamente da questa lista.
+                        </p>
+                        <div className="mt-3 space-y-2">
+                          <label
+                            className="text-sm font-semibold text-slate-700"
+                            htmlFor={`nota-blocco-rapido-${voce.corsa.id}`}
+                          >
+                            Nota operativa
+                          </label>
+                          <textarea
+                            id={`nota-blocco-rapido-${voce.corsa.id}`}
+                            value={noteBloccoRapido[voce.corsa.id] ?? ""}
+                            onChange={(event) =>
+                              setNoteBloccoRapido((currentValue) => ({
+                                ...currentValue,
+                                [voce.corsa!.id]: event.target.value,
+                              }))
+                            }
+                            className="min-h-[96px] w-full rounded-2xl border border-emerald-100 bg-white px-4 py-3 text-sm text-slate-900 outline-none transition focus:border-cyan-500 focus:ring-4 focus:ring-cyan-100"
+                            placeholder="Descrivi in breve perche stai chiudendo la corsa da remoto."
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            void eseguiBloccoRemotoCorsa({
+                              corsaId: voce.corsa!.id,
+                              emailUtente: voce.utente.email,
+                              notaOperatore:
+                                noteBloccoRapido[voce.corsa!.id] ?? "",
+                            });
+                          }}
+                          disabled={
+                            isSubmitting ||
+                            isSuspending ||
+                            isRemoteBlocking
+                          }
+                          className="mt-4 inline-flex w-full items-center justify-center rounded-2xl bg-slate-950 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+                        >
+                          {isRemoteBlocking &&
+                          corsaRemotaInCorsoId === voce.corsa.id
+                            ? "Blocco remoto in corso..."
+                            : "Blocca da remoto e chiudi corsa"}
+                        </button>
                       </div>
                     </div>
                   );

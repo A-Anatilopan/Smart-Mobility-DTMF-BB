@@ -77,6 +77,7 @@ function mappaCorsaDominio(corsa: Corsa): CorsaNoleggio {
     id: corsa.id,
     codice: corsa.codice,
     utenteId: corsa.utenteId,
+    terminataDaOperatoreId: corsa.terminataDaOperatoreId,
     mezzoId: corsa.mezzoId,
     prenotazioneId: corsa.prenotazioneId,
     stato: corsa.stato as CorsaNoleggio["stato"],
@@ -100,6 +101,8 @@ function mappaCorsaDominio(corsa: Corsa): CorsaNoleggio {
       costoPausaCent: corsa.costoPausaCent,
       costoTotaleCent: corsa.costoTotaleCent,
     },
+    modalitaTerminazione: corsa.modalitaTerminazione,
+    notaTerminazioneOperatore: corsa.notaTerminazioneOperatore,
   };
 }
 
@@ -834,6 +837,53 @@ export async function riprendiCorsaInPausa(input: {
   return mappaCorsaDominio(corsaAggiornata);
 }
 
+async function chiudiCorsaPersistente(input: {
+  corsa: Corsa;
+  posizioneFine?: Coordinate | null;
+  terminataDaOperatoreId?: number | null;
+  modalitaTerminazione?: string | null;
+  notaTerminazioneOperatore?: string | null;
+}): Promise<CorsaNoleggio> {
+  const terminataAt = new Date();
+  const durataUtilizzoTotaleMs =
+    input.corsa.durataUtilizzoMs +
+    (input.corsa.stato === "ATTIVA"
+      ? calcolaMillisecondiSegmento(input.corsa.ultimaRipresaAt, terminataAt)
+      : 0);
+  const durataPausaTotaleMs =
+    input.corsa.durataPausaMs +
+    (input.corsa.stato === "IN_PAUSA" && input.corsa.pausaIniziataAt
+      ? calcolaMillisecondiSegmento(input.corsa.pausaIniziataAt, terminataAt)
+      : 0);
+  const costoSbloccoCent = COSTO_SBLOCCO_CENT;
+  const costoUtilizzoCent =
+    calcolaCostoUtilizzoTotaleCent(durataUtilizzoTotaleMs);
+  const costoPausaCent = calcolaCostoPausaTotaleCent(durataPausaTotaleMs);
+  const costoTotaleCent =
+    costoSbloccoCent + costoUtilizzoCent + costoPausaCent;
+
+  const corsaAggiornata = await prisma.corsa.update({
+    where: { id: input.corsa.id },
+    data: {
+      stato: "TERMINATA",
+      terminataAt,
+      latitudineFine: input.posizioneFine?.latitudine,
+      longitudineFine: input.posizioneFine?.longitudine,
+      durataUtilizzoMs: durataUtilizzoTotaleMs,
+      durataPausaMs: durataPausaTotaleMs,
+      costoSbloccoCent,
+      costoUtilizzoCent,
+      costoPausaCent,
+      costoTotaleCent,
+      terminataDaOperatoreId: input.terminataDaOperatoreId ?? null,
+      modalitaTerminazione: input.modalitaTerminazione ?? null,
+      notaTerminazioneOperatore: input.notaTerminazioneOperatore ?? null,
+    },
+  });
+
+  return mappaCorsaDominio(corsaAggiornata);
+}
+
 // Termina una corsa attiva o in pausa, registrando una posizione finale minima
 // e il primo dettaglio costi utile per i futuri flussi UT.07 / UT.08.
 export async function terminaCorsa(input: {
@@ -857,39 +907,47 @@ export async function terminaCorsa(input: {
     throw new Error("La corsa e gia terminata.");
   }
 
-  const terminataAt = new Date();
-  const durataUtilizzoTotaleMs =
-    corsa.durataUtilizzoMs +
-    (corsa.stato === "ATTIVA"
-      ? calcolaMillisecondiSegmento(corsa.ultimaRipresaAt, terminataAt)
-      : 0);
-  const durataPausaTotaleMs =
-    corsa.durataPausaMs +
-    (corsa.stato === "IN_PAUSA" && corsa.pausaIniziataAt
-      ? calcolaMillisecondiSegmento(corsa.pausaIniziataAt, terminataAt)
-      : 0);
-  const costoSbloccoCent = COSTO_SBLOCCO_CENT;
-  const costoUtilizzoCent =
-    calcolaCostoUtilizzoTotaleCent(durataUtilizzoTotaleMs);
-  const costoPausaCent = calcolaCostoPausaTotaleCent(durataPausaTotaleMs);
-  const costoTotaleCent =
-    costoSbloccoCent + costoUtilizzoCent + costoPausaCent;
+  return chiudiCorsaPersistente({
+    corsa,
+    posizioneFine: input.posizioneFine,
+  });
+}
 
-  const corsaAggiornata = await prisma.corsa.update({
-    where: { id: corsa.id },
-    data: {
-      stato: "TERMINATA",
-      terminataAt,
-      latitudineFine: input.posizioneFine?.latitudine,
-      longitudineFine: input.posizioneFine?.longitudine,
-      durataUtilizzoMs: durataUtilizzoTotaleMs,
-      durataPausaMs: durataPausaTotaleMs,
-      costoSbloccoCent,
-      costoUtilizzoCent,
-      costoPausaCent,
-      costoTotaleCent,
-    },
+// Chiusura remota assistita per OP.10: l'operatore puo bloccare a distanza un
+// mezzo solo quando deve aiutare a terminare una corsa aperta o in pausa.
+export async function terminaCorsaDaOperatore(input: {
+  corsaId: number;
+  operatoreId: number;
+  notaOperatore: string;
+  posizioneFine?: Coordinate | null;
+}): Promise<CorsaNoleggio> {
+  const notaPulita = input.notaOperatore.trim();
+
+  if (notaPulita.length < 10) {
+    throw new Error(
+      "Inserisci una nota operatore piu chiara prima di chiudere la corsa da remoto.",
+    );
+  }
+
+  const corsa = await prisma.corsa.findUnique({
+    where: { id: input.corsaId },
   });
 
-  return mappaCorsaDominio(corsaAggiornata);
+  if (!corsa) {
+    throw new Error("Corsa non trovata.");
+  }
+
+  if (!["ATTIVA", "IN_PAUSA"].includes(corsa.stato)) {
+    throw new Error(
+      "Il blocco remoto e disponibile solo per corse ancora attive o in pausa.",
+    );
+  }
+
+  return chiudiCorsaPersistente({
+    corsa,
+    posizioneFine: input.posizioneFine,
+    terminataDaOperatoreId: input.operatoreId,
+    modalitaTerminazione: "BLOCCO_REMOTO_ASSISTITO",
+    notaTerminazioneOperatore: notaPulita,
+  });
 }

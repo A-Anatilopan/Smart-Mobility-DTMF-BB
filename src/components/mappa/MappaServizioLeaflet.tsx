@@ -18,10 +18,16 @@ import {
   useMap,
 } from "react-leaflet";
 import { puntiInteresseMappaMock } from "@/lib/mappa/mock-data";
+import { posizioneOperatoreMappaMock } from "@/lib/mappa/mock-data";
+import {
+  MESSAGGIO_MEZZO_TROPPO_LONTANO_PER_SBLOCCO,
+  operatoreVicinoAlMezzo,
+} from "@/lib/operazioni-mezzo-operatore.shared";
 import type { Coordinate, Mezzo, PuntoInteresseMappa } from "@/types/mobilita";
 import type {
   MappaServizioProps,
   ModalitaMappa,
+  SessioneOperativaMezzoCard,
 } from "@/components/mappa/mappa-servizio.types";
 
 const BARI_CENTRO: LatLngExpression = [41.1171, 16.8719];
@@ -146,11 +152,15 @@ function MezzoPopup({
   modalita,
   noleggioUtente,
   onApriSegnalazioneMezzo,
+  onApriSessioneOperativaMezzo,
+  sessioneOperativaAttiva,
 }: {
   mezzo: Mezzo;
   modalita: ModalitaMappa;
   noleggioUtente?: MappaServizioProps["noleggioUtente"];
   onApriSegnalazioneMezzo?: MappaServizioProps["onApriSegnalazioneMezzo"];
+  onApriSessioneOperativaMezzo?: MappaServizioProps["onApriSessioneOperativaMezzo"];
+  sessioneOperativaAttiva?: SessioneOperativaMezzoCard;
 }) {
   const controllerNoleggio = modalita === "utente" ? noleggioUtente ?? null : null;
   const prenotazioneSulMezzo =
@@ -190,6 +200,13 @@ function MezzoPopup({
     "inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-slate-950 px-2.5 py-1.5 text-[11px] font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400";
   const pulsanteSecondarioClassName =
     "inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-900 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400";
+  const sbloccoLocaleConsentito =
+    modalita !== "operatore"
+      ? true
+      : operatoreVicinoAlMezzo(posizioneOperatoreMappaMock, {
+          latitudine: mezzo.latitudine,
+          longitudine: mezzo.longitudine,
+        });
 
   return (
     <div className="w-[252px] space-y-2 text-[11px] text-slate-700">
@@ -256,6 +273,21 @@ function MezzoPopup({
           </div>
         </div>
       </div>
+
+      {modalita === "operatore" && sessioneOperativaAttiva ? (
+        <div className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5">
+          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-amber-800">
+            Sessione operativa attiva
+          </p>
+          <p className="mt-1 text-[11px] font-medium text-slate-900">
+            {sessioneOperativaAttiva.operatore.nome}{" "}
+            {sessioneOperativaAttiva.operatore.cognome}
+          </p>
+          <p className="text-[11px] leading-4 text-slate-700">
+            Motivo: {sessioneOperativaAttiva.motivo.replaceAll("_", " ")}
+          </p>
+        </div>
+      ) : null}
 
       {controllerNoleggio ? (
         <div className="space-y-2 border-t border-slate-200 pt-2">
@@ -389,24 +421,57 @@ function MezzoPopup({
       ) : null}
 
       {(modalita === "utente" || modalita === "operatore") &&
-      onApriSegnalazioneMezzo ? (
-        <div className="border-t border-slate-200 pt-2">
-          <button
-            type="button"
-            onClick={() => {
-              onApriSegnalazioneMezzo(mezzo);
-            }}
-            className={`inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition ${
-              modalita === "operatore"
-                ? "border border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100"
-                : "border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100"
-            }`}
-          >
-            <span aria-hidden="true">⚠</span>
-            {modalita === "operatore"
-              ? "Segnala malfunzionamento"
-              : "Segnala un problema"}
-          </button>
+      (onApriSegnalazioneMezzo || onApriSessioneOperativaMezzo) ? (
+        <div className="space-y-2 border-t border-slate-200 pt-2">
+          {modalita === "operatore" && onApriSessioneOperativaMezzo ? (
+            <button
+              type="button"
+              disabled={!sessioneOperativaAttiva && !sbloccoLocaleConsentito}
+              onClick={() => {
+                onApriSessioneOperativaMezzo(mezzo);
+              }}
+              className={`inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition ${
+                sessioneOperativaAttiva
+                  ? "border border-slate-900 bg-slate-900 text-white hover:bg-slate-800"
+                  : sbloccoLocaleConsentito
+                    ? "border border-amber-200 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                    : "cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-500"
+              }`}
+            >
+              <span aria-hidden="true">{sessioneOperativaAttiva ? "■" : "🔓"}</span>
+              {sessioneOperativaAttiva
+                ? "Blocca e chiudi sessione"
+                : "Sblocca per intervento"}
+            </button>
+          ) : null}
+
+          {!sessioneOperativaAttiva &&
+          modalita === "operatore" &&
+          onApriSessioneOperativaMezzo &&
+          !sbloccoLocaleConsentito ? (
+            <div className="rounded-md border border-rose-200 bg-rose-50 px-2 py-1.5 text-[11px] leading-4 text-rose-800">
+              {MESSAGGIO_MEZZO_TROPPO_LONTANO_PER_SBLOCCO}
+            </div>
+          ) : null}
+
+          {onApriSegnalazioneMezzo ? (
+            <button
+              type="button"
+              onClick={() => {
+                onApriSegnalazioneMezzo(mezzo);
+              }}
+              className={`inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition ${
+                modalita === "operatore"
+                  ? "border border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100"
+                  : "border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100"
+              }`}
+            >
+              <span aria-hidden="true">⚠</span>
+              {modalita === "operatore"
+                ? "Segnala malfunzionamento"
+                : "Segnala un problema"}
+            </button>
+          ) : null}
         </div>
       ) : null}
     </div>
@@ -469,6 +534,8 @@ export default function MappaServizioLeaflet({
   posizioneUtente = null,
   noleggioUtente,
   onApriSegnalazioneMezzo,
+  onApriSessioneOperativaMezzo,
+  sessioniOperativeAttive = {},
   riconsegneRecenti = [],
   mostraPuntiChiave,
   mostraPuntiInteresse = true,
@@ -766,6 +833,8 @@ export default function MappaServizioLeaflet({
                       modalita={modalita}
                       noleggioUtente={noleggioUtente}
                       onApriSegnalazioneMezzo={onApriSegnalazioneMezzo}
+                      onApriSessioneOperativaMezzo={onApriSessioneOperativaMezzo}
+                      sessioneOperativaAttiva={sessioniOperativeAttive[mezzo.id]}
                     />
                   </Popup>
                   <Tooltip direction="top" offset={[0, -8]}>

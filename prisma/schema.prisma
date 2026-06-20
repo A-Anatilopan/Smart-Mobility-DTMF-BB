@@ -45,6 +45,8 @@ model Utente {
   corse            Corsa[]
   segnalazioniMezzo SegnalazioneMezzo[] @relation("UtenteSegnalanteMezzo")
   segnalazioniPreseInCarico SegnalazioneMezzo[] @relation("OperatorePresaInCaricoSegnalazioneMezzo")
+  sessioniOperativeMezzo SessioneOperativaMezzo[] @relation("OperatoreSessioneOperativaMezzo")
+  corseTerminateDaOperatore Corsa[] @relation("OperatoreTermineCorsa")
 
   @@map("utenti")
 }
@@ -94,6 +96,7 @@ model Corsa {
   id                 Int       @id @default(autoincrement())
   codice             String    @unique @db.VarChar(36)
   utenteId           Int
+  terminataDaOperatoreId Int?
   mezzoId            String    @db.VarChar(50)
   prenotazioneId     Int?      @unique
   stato              String    @default("ATTIVA") @db.VarChar(30)
@@ -123,13 +126,17 @@ model Corsa {
   costoUtilizzoCent  Int       @default(0)
   costoPausaCent     Int       @default(0)
   costoTotaleCent    Int       @default(0)
+  modalitaTerminazione String? @db.VarChar(30)
+  notaTerminazioneOperatore String? @db.Text
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
   utente       Utente        @relation(fields: [utenteId], references: [id], onDelete: Cascade)
   prenotazione Prenotazione? @relation(fields: [prenotazioneId], references: [id], onDelete: SetNull)
+  terminataDaOperatore Utente? @relation("OperatoreTermineCorsa", fields: [terminataDaOperatoreId], references: [id], onDelete: SetNull)
 
   @@index([utenteId, stato])
+  @@index([terminataDaOperatoreId])
   @@index([mezzoId, stato])
   @@map("corse")
 }
@@ -169,4 +176,38 @@ model SegnalazioneMezzo {
   @@index([stato])
   @@index([mezzoId, stato])
   @@map("segnalazioni_mezzo")
+}
+
+// ================================
+// M-05 - OPERAZIONI OPERATORE SUI MEZZI
+// Copre la base strutturale per: OP.10
+// Nota: la sessione operativa tiene memoria dello stato business originario
+// del mezzo, cosi il blocco finale puo ripristinarlo senza perdere il contesto
+// operativo precedente.
+// ================================
+
+model SessioneOperativaMezzo {
+  id                Int      @id @default(autoincrement())
+  codice            String   @unique @db.VarChar(50)
+  operatoreId       Int
+  mezzoId           String   @db.VarChar(50)
+  mezzoCodice       String   @db.VarChar(50)
+  statoMezzoOrigine String   @db.VarChar(30)
+  modalita          String   @default("LOCALE") @db.VarChar(30)
+  stato             String   @default("ATTIVA") @db.VarChar(20)
+  motivo            String   @db.VarChar(50)
+  noteApertura      String?  @db.Text
+  noteChiusura      String?  @db.Text
+  apertaAt          DateTime @default(now())
+  chiusaAt          DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  operatore Utente @relation("OperatoreSessioneOperativaMezzo", fields: [operatoreId], references: [id], onDelete: Cascade)
+
+  @@index([operatoreId])
+  @@index([mezzoId])
+  @@index([stato])
+  @@index([mezzoId, stato])
+  @@map("sessioni_operative_mezzo")
 }

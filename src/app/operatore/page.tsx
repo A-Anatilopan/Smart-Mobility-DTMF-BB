@@ -1,11 +1,15 @@
 import type { Metadata } from "next";
 import MappaOperatoreSegnalazioniClient from "@/components/operatore/MappaOperatoreSegnalazioniClient";
+import RiepilogoSessioniOperativeAttive from "@/components/operatore/RiepilogoSessioniOperativeAttive";
 import {
   areeServizioMock,
   mezziMock,
   posizioneOperatoreMappaMock,
 } from "@/lib/mappa/mock-data";
 import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
+import { prisma } from "@/lib/prisma";
+import { richiediRuolo } from "@/lib/session";
+import { RUOLI } from "@/lib/ruoli";
 
 // Metadati della prima vista operatore del modulo M-02.
 export const metadata: Metadata = {
@@ -15,7 +19,37 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardOperatorePage() {
-  const mezziMonitorati = await risolviMezziConStatoDinamico(mezziMock);
+  const [operatore, mezziMonitorati, sessioniOperativeAttiveDb] = await Promise.all([
+    richiediRuolo(RUOLI.OPERATORE),
+    risolviMezziConStatoDinamico(mezziMock),
+    prisma.sessioneOperativaMezzo.findMany({
+      where: {
+        stato: "ATTIVA",
+        modalita: "LOCALE",
+      },
+      select: {
+        id: true,
+        codice: true,
+        mezzoId: true,
+        mezzoCodice: true,
+        motivo: true,
+        noteApertura: true,
+        noteChiusura: true,
+        apertaAt: true,
+        operatore: {
+          select: {
+            id: true,
+            nome: true,
+            cognome: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: {
+        apertaAt: "desc",
+      },
+    }),
+  ]);
   const mezziConBatteriaBassa = mezziMonitorati.filter(
     (mezzo) => mezzo.batteria <= 25,
   );
@@ -24,6 +58,36 @@ export default async function DashboardOperatorePage() {
   );
   const mezziInManutenzione = mezziMonitorati.filter(
     (mezzo) => mezzo.stato === "IN_MANUTENZIONE",
+  );
+  const sessioniOperativeAttive = Object.fromEntries(
+    sessioniOperativeAttiveDb.map((sessione) => [
+      sessione.mezzoId,
+      {
+        ...sessione,
+        apertaAt: sessione.apertaAt.toISOString(),
+      },
+    ]),
+  );
+  const sessioniOperativeRiepilogo = sessioniOperativeAttiveDb.map(
+    (sessione) => {
+      const mezzo = mezziMonitorati.find(
+        (mezzoCorrente) => mezzoCorrente.id === sessione.mezzoId,
+      );
+
+      return {
+        id: sessione.id,
+        codice: sessione.codice,
+        mezzoId: sessione.mezzoId,
+        mezzoCodice: sessione.mezzoCodice,
+        mezzoModello: mezzo?.modello ?? sessione.mezzoCodice,
+        statoMezzoCorrente: mezzo?.stato ?? "NON_DISPONIBILE",
+        motivo: sessione.motivo,
+        noteApertura: sessione.noteApertura,
+        noteChiusura: sessione.noteChiusura,
+        apertaAt: sessione.apertaAt.toISOString(),
+        operatore: sessione.operatore,
+      };
+    },
   );
 
   return (
@@ -82,12 +146,17 @@ export default async function DashboardOperatorePage() {
           </div>
         </div>
       </section>
+      <RiepilogoSessioniOperativeAttive
+        sessioni={sessioniOperativeRiepilogo}
+        operatoreCorrenteId={operatore.id}
+      />
       {/* La home mostra solo orientamento rapido e mappa generale: i dettagli
           operativi vivono nelle sezioni dedicate del menu. */}
       <MappaOperatoreSegnalazioniClient
         aree={areeServizioMock}
         mezzi={mezziMonitorati}
         posizioneUtente={posizioneOperatoreMappaMock}
+        sessioniOperativeAttive={sessioniOperativeAttive}
       />
     </>
   );

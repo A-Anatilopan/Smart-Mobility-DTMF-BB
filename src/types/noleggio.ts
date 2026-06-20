@@ -39,6 +39,7 @@ export type CorsaNoleggio = {
   id: number;
   codice: string;
   utenteId: number;
+  terminataDaOperatoreId: number | null;
   mezzoId: string;
   prenotazioneId: number | null;
   stato: StatoCorsa;
@@ -51,6 +52,8 @@ export type CorsaNoleggio = {
   posizioneInizio: Coordinate | null;
   posizioneFine: Coordinate | null;
   costi: DettaglioCostoCorsa;
+  modalitaTerminazione: string | null;
+  notaTerminazioneOperatore: string | null;
 };
 
 // Stati sintetici pensati per la lettura rapida lato operatore durante il

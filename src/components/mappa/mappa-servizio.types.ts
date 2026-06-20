@@ -15,6 +15,21 @@ export type RiconsegnaRecenteMappa = {
   longitudine: number;
 };
 
+export type SessioneOperativaMezzoCard = {
+  id: number;
+  codice: string;
+  motivo: string;
+  noteApertura: string | null;
+  noteChiusura: string | null;
+  apertaAt: string;
+  operatore: {
+    id: number;
+    nome: string;
+    cognome: string;
+    email: string;
+  };
+};
+
 // Props condivise della mappa di servizio reale basata su cartografia esterna.
 export type MappaServizioProps = {
   aree: AreaServizio[];
@@ -23,6 +38,8 @@ export type MappaServizioProps = {
   posizioneUtente?: PosizioneUtenteMappa | null;
   noleggioUtente?: NoleggioUtenteController;
   onApriSegnalazioneMezzo?: (mezzo: Mezzo) => void;
+  onApriSessioneOperativaMezzo?: (mezzo: Mezzo) => void;
+  sessioniOperativeAttive?: Record<string, SessioneOperativaMezzoCard>;
   riconsegneRecenti?: RiconsegnaRecenteMappa[];
   mostraPuntiChiave?: boolean;
   mostraPuntiInteresse?: boolean;
