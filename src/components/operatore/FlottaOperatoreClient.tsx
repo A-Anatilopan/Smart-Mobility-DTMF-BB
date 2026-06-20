@@ -7,12 +7,16 @@ import type { Mezzo } from "@/types/mobilita";
 
 type FlottaOperatoreClientProps = {
   mezzi: Mezzo[];
+  ricercaIniziale?: string;
+  statoIniziale?: string;
 };
 
 // Questo wrapper collega la lista flotta alla segnalazione operativa senza
 // spostare la logica del filtro dentro la pagina server.
 export default function FlottaOperatoreClient({
   mezzi,
+  ricercaIniziale,
+  statoIniziale,
 }: FlottaOperatoreClientProps) {
   const [mezzoSelezionato, setMezzoSelezionato] = useState<Mezzo | null>(null);
 
@@ -22,6 +26,8 @@ export default function FlottaOperatoreClient({
         mezzi={mezzi}
         modalita="operatore"
         messaggioVuoto="Prova a cambiare stato o tipo mezzo per ritrovare i veicoli che vuoi monitorare."
+        ricercaIniziale={ricercaIniziale}
+        statoIniziale={statoIniziale}
         onApriSegnalazioneMezzo={(mezzo) => {
           setMezzoSelezionato(mezzo);
         }}

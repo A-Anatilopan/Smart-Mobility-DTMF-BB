@@ -3,6 +3,7 @@ import FlottaOperatoreClient from "@/components/operatore/FlottaOperatoreClient"
 import HeroSezioneOperatore from "@/components/operatore/HeroSezioneOperatore";
 import { mezziMock } from "@/lib/mappa/mock-data";
 import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
+import type { StatoMezzo } from "@/types/mobilita";
 
 export const metadata: Metadata = {
   title: "Flotta | E-Smart Mobility",
@@ -10,8 +11,45 @@ export const metadata: Metadata = {
     "Area operatore dedicata all'elenco filtrabile della flotta monitorata.",
 };
 
-export default async function OperatoreFlottaPage() {
+type OperatoreFlottaPageProps = {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+};
+
+const STATI_FILTRO_VALIDI: StatoMezzo[] = [
+  "DISPONIBILE",
+  "PRENOTATO",
+  "IN_USO",
+  "IN_PAUSA",
+  "IN_MANUTENZIONE",
+  "NON_DISPONIBILE",
+];
+
+function risolviStatoFiltroIniziale(
+  valore: string | string[] | undefined,
+): StatoMezzo | "TUTTI" {
+  if (typeof valore !== "string") {
+    return "TUTTI";
+  }
+
+  const statoNormalizzato = valore.trim().toUpperCase();
+
+  if (statoNormalizzato === "TUTTI" || statoNormalizzato.length === 0) {
+    return "TUTTI";
+  }
+
+  return STATI_FILTRO_VALIDI.includes(statoNormalizzato as StatoMezzo)
+    ? (statoNormalizzato as StatoMezzo)
+    : "TUTTI";
+}
+
+export default async function OperatoreFlottaPage({
+  searchParams,
+}: OperatoreFlottaPageProps) {
   const mezziMonitorati = await risolviMezziConStatoDinamico(mezziMock);
+  const query = await searchParams;
+  const ricercaIniziale =
+    typeof query.ricerca === "string" ? query.ricerca.trim() : "";
+  const statoIniziale = risolviStatoFiltroIniziale(query.stato);
 
   return (
     <>
@@ -21,7 +59,7 @@ export default async function OperatoreFlottaPage() {
         descrizione="Qui l'operatore consulta l'intera flotta con stato, batteria e posizione aggiornata del mezzo, inclusa l'ultima posizione utile dopo la chiusura di un noleggio."
       />
 
-      <section className="space-y-4">
+      <section id="flotta-monitorata" className="space-y-4">
         <div className="space-y-2">
           <p className="text-sm font-semibold uppercase tracking-[0.18em] text-sky-700">
             Flotta monitorata
@@ -31,7 +69,12 @@ export default async function OperatoreFlottaPage() {
           </h2>
         </div>
 
-        <FlottaOperatoreClient mezzi={mezziMonitorati} />
+        <FlottaOperatoreClient
+          key={`${ricercaIniziale || "vuoto"}::${statoIniziale}`}
+          mezzi={mezziMonitorati}
+          ricercaIniziale={ricercaIniziale}
+          statoIniziale={statoIniziale}
+        />
       </section>
     </>
   );

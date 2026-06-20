@@ -15,6 +15,8 @@ type ListaMezziFiltrabileProps = {
   mezzi: Mezzo[];
   modalita: ModalitaFiltri;
   messaggioVuoto: string;
+  ricercaIniziale?: string;
+  statoIniziale?: string;
   condizioneServizioSelezionata?: FiltroCondizioneServizio;
   onCondizioneServizioChange?: (valore: FiltroCondizioneServizio) => void;
   onApriSegnalazioneMezzo?: (mezzo: Mezzo) => void;
@@ -68,6 +70,33 @@ const LABEL_CONDIZIONE_SERVIZIO: Record<FiltroCondizioneServizio, string> = {
   NON_DISPONIBILI: "Esclusi dal servizio",
   CRITICI: "Richiedono attenzione",
 };
+
+const STATI_FILTRO_VALIDI: StatoMezzo[] = [
+  "DISPONIBILE",
+  "PRENOTATO",
+  "IN_USO",
+  "IN_PAUSA",
+  "IN_MANUTENZIONE",
+  "NON_DISPONIBILE",
+];
+
+function risolviStatoFiltroValido(
+  valore: string | undefined,
+): StatoMezzo | "TUTTI" {
+  if (!valore) {
+    return "TUTTI";
+  }
+
+  const statoNormalizzato = valore.trim().toUpperCase();
+
+  if (statoNormalizzato === "TUTTI" || statoNormalizzato.length === 0) {
+    return "TUTTI";
+  }
+
+  return STATI_FILTRO_VALIDI.includes(statoNormalizzato as StatoMezzo)
+    ? (statoNormalizzato as StatoMezzo)
+    : "TUTTI";
+}
 
 // Testi diversi per ruolo: aiutano a leggere i risultati in modo piu naturale.
 const TESTI_RUOLO = {
@@ -146,13 +175,17 @@ export default function ListaMezziFiltrabile({
   mezzi,
   modalita,
   messaggioVuoto,
+  ricercaIniziale,
+  statoIniziale,
   condizioneServizioSelezionata,
   onCondizioneServizioChange,
   onApriSegnalazioneMezzo,
 }: ListaMezziFiltrabileProps) {
-  const [ricerca, setRicerca] = useState("");
+  const statoFiltroIniziale = risolviStatoFiltroValido(statoIniziale);
+  const [ricerca, setRicerca] = useState(ricercaIniziale ?? "");
   const [tipoSelezionato, setTipoSelezionato] = useState<string>("TUTTI");
-  const [statoSelezionato, setStatoSelezionato] = useState<string>("TUTTI");
+  const [statoSelezionato, setStatoSelezionato] =
+    useState<StatoMezzo | "TUTTI">(statoFiltroIniziale);
   const [patenteSelezionata, setPatenteSelezionata] =
     useState<string>("TUTTE");
   const [areaSelezionata, setAreaSelezionata] = useState<string>("TUTTE");
@@ -163,15 +196,15 @@ export default function ListaMezziFiltrabile({
 
   const ricercaDifferita = useDeferredValue(ricerca);
   const tipiDisponibili = Array.from(new Set(mezzi.map((mezzo) => mezzo.tipo)));
-  const statiDisponibili = Array.from(
-    new Set(mezzi.map((mezzo) => mezzo.stato)),
-  );
+  const statiDisponibili = Array.from(new Set(mezzi.map((mezzo) => mezzo.stato)))
+    .filter((stato): stato is StatoMezzo => STATI_FILTRO_VALIDI.includes(stato));
   const patentiDisponibili = Array.from(
     new Set(mezzi.map((mezzo) => mezzo.patenteRichiesta)),
   );
   const areeDisponibili = Array.from(
     new Set(mezzi.map((mezzo) => mezzo.areaServizioNome)),
   );
+
   const haFiltriAttivi =
     ricerca.trim().length > 0 ||
     tipoSelezionato !== "TUTTI" ||
@@ -241,7 +274,7 @@ export default function ListaMezziFiltrabile({
     modalita !== "utente" && statoSelezionato !== "TUTTI"
       ? {
           id: "stato",
-          label: `Stato: ${LABEL_STATO[statoSelezionato as StatoMezzo]}`,
+          label: `Stato: ${LABEL_STATO[statoSelezionato]}`,
           onRemove: () => setStatoSelezionato("TUTTI"),
         }
       : null,
@@ -416,7 +449,11 @@ export default function ListaMezziFiltrabile({
                   <select
                     id={`stato-${modalita}`}
                     value={statoSelezionato}
-                    onChange={(event) => setStatoSelezionato(event.target.value)}
+                    onChange={(event) =>
+                      setStatoSelezionato(
+                        risolviStatoFiltroValido(event.target.value),
+                      )
+                    }
                     className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
                   >
                     <option value="TUTTI">Tutti</option>

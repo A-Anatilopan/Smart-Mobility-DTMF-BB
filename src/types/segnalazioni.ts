@@ -20,17 +20,29 @@ export type CategoriaSegnalazioneMezzo =
 export const STATI_SEGNALAZIONE_MEZZO = [
   "APERTA",
   "PRESA_IN_CARICO",
+  "RITIRO_PROGRAMMATO",
+  "IN_MANUTENZIONE",
   "RISOLTA",
+  "RIMESSA_IN_SERVIZIO_PROGRAMMATA",
+  "RIMESSA_IN_SERVIZIO",
 ] as const;
 
 export type StatoSegnalazioneMezzo =
   (typeof STATI_SEGNALAZIONE_MEZZO)[number];
+
+export type OperatoreAssegnatoSegnalazioneMezzo = {
+  id: number;
+  nome: string;
+  cognome: string;
+  email: string;
+};
 
 export type SegnalazioneMezzoDominio = {
   id: number;
   codice: string;
   origine: OrigineSegnalazioneMezzo;
   utenteId: number;
+  operatorePresaInCarico: OperatoreAssegnatoSegnalazioneMezzo | null;
   mezzoId: string;
   mezzoCodice: string;
   categoria: CategoriaSegnalazioneMezzo;
@@ -38,8 +50,90 @@ export type SegnalazioneMezzoDominio = {
   stato: StatoSegnalazioneMezzo;
   presaInCaricoAt: Date | string | null;
   risoltaAt: Date | string | null;
+  riepilogoRisoluzione: string | null;
   createdAt: Date | string;
   updatedAt: Date | string;
+};
+
+export type RiepilogoSegnalazioniAperteMezzo = {
+  mezzoId: string;
+  totaleSegnalazioniAperte: number;
+  totaleSegnalazioniInGestione: number;
+  ultimaSegnalazioneAt: Date | string;
+  ultimaCategoria: CategoriaSegnalazioneMezzo;
+  ultimaOrigine: OrigineSegnalazioneMezzo;
+  ultimoCodiceSegnalazione: string;
+};
+
+export type SegnalazioneMezzoAttivaOperatore = {
+  id: number;
+  codice: string;
+  mezzoId: string;
+  mezzoCodice: string;
+  origine: OrigineSegnalazioneMezzo;
+  categoria: CategoriaSegnalazioneMezzo;
+  descrizione: string;
+  stato: StatoSegnalazioneMezzo;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  presaInCaricoAt: Date | string | null;
+  operatorePresaInCarico: OperatoreAssegnatoSegnalazioneMezzo | null;
+  riepilogoRisoluzione: string | null;
+};
+
+export type SegnalazioneMezzoChiusaOperatore = {
+  id: number;
+  codice: string;
+  mezzoId: string;
+  mezzoCodice: string;
+  origine: OrigineSegnalazioneMezzo;
+  categoria: CategoriaSegnalazioneMezzo;
+  descrizione: string;
+  stato: StatoSegnalazioneMezzo;
+  createdAt: Date | string;
+  updatedAt: Date | string;
+  presaInCaricoAt: Date | string | null;
+  risoltaAt: Date | string | null;
+  operatorePresaInCarico: OperatoreAssegnatoSegnalazioneMezzo | null;
+  riepilogoRisoluzione: string | null;
+};
+
+export type MezzoConRiepilogoSegnalazioniAperte = {
+  mezzo: {
+    id: string;
+    codice: string;
+    modello: string;
+    tipo: string;
+    stato: string;
+    batteria: number;
+    areaServizioNome: string;
+  };
+  riepilogo: RiepilogoSegnalazioniAperteMezzo;
+};
+
+export type MezzoConDettaglioSegnalazioniAperte = {
+  mezzo: {
+    id: string;
+    codice: string;
+    modello: string;
+    tipo: string;
+    stato: string;
+    batteria: number;
+    areaServizioNome: string;
+  };
+  riepilogo: RiepilogoSegnalazioniAperteMezzo;
+  segnalazioniAttive: SegnalazioneMezzoAttivaOperatore[];
+};
+
+export type CronologiaSegnalazioneChiusaOperatore = {
+  segnalazione: SegnalazioneMezzoChiusaOperatore;
+  mezzo: {
+    id: string;
+    codice: string;
+    modello: string;
+    tipo: string;
+    areaServizioNome: string;
+  };
 };
 
 export type InputSegnalazioneMezzoUtente = {

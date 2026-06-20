@@ -43,7 +43,8 @@ model Utente {
   sessioni         Sessione[]
   prenotazioni     Prenotazione[]
   corse            Corsa[]
-  segnalazioniMezzo SegnalazioneMezzo[]
+  segnalazioniMezzo SegnalazioneMezzo[] @relation("UtenteSegnalanteMezzo")
+  segnalazioniPreseInCarico SegnalazioneMezzo[] @relation("OperatorePresaInCaricoSegnalazioneMezzo")
 
   @@map("utenti")
 }
@@ -147,19 +148,23 @@ model SegnalazioneMezzo {
   codice           String   @unique @db.VarChar(50)
   origine          String   @default("UTENTE") @db.VarChar(20)
   utenteId         Int
+  operatorePresaInCaricoId Int?
   mezzoId          String   @db.VarChar(50)
   mezzoCodice      String   @db.VarChar(50)
   categoria        String   @db.VarChar(30)
   descrizione      String   @db.Text
-  stato            String   @default("APERTA") @db.VarChar(30)
+  stato            String   @default("APERTA") @db.VarChar(50)
   presaInCaricoAt  DateTime?
   risoltaAt        DateTime?
+  riepilogoRisoluzione String? @db.Text
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  utente Utente @relation(fields: [utenteId], references: [id], onDelete: Cascade)
+  utente Utente @relation("UtenteSegnalanteMezzo", fields: [utenteId], references: [id], onDelete: Cascade)
+  operatorePresaInCarico Utente? @relation("OperatorePresaInCaricoSegnalazioneMezzo", fields: [operatorePresaInCaricoId], references: [id], onDelete: SetNull)
 
   @@index([utenteId])
+  @@index([operatorePresaInCaricoId])
   @@index([mezzoId])
   @@index([stato])
   @@index([mezzoId, stato])

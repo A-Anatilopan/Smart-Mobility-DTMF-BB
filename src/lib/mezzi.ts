@@ -18,6 +18,16 @@ const STATI_DINAMICI_NOLEGGIO: Mezzo["stato"][] = [
   "IN_PAUSA",
 ];
 
+// Le segnalazioni non devono bloccare subito il mezzo appena vengono aperte:
+// il blocco operativo parte da ritiro programmato e prosegue fino alla
+// rimessa in servizio finale.
+const STATI_SEGNALAZIONE_NON_DISPONIBILE = [
+  "RITIRO_PROGRAMMATO",
+  "RISOLTA",
+  "RIMESSA_IN_SERVIZIO_PROGRAMMATA",
+];
+const STATI_SEGNALAZIONE_MANUTENTIVA = ["IN_MANUTENZIONE"];
+
 // Sovrappone ai mezzi del dataset mock lo stato reale letto dal database:
 // serve a mostrare su mappe e liste operative i mezzi davvero prenotati,
 // in uso o in pausa, senza perdere il resto dei metadati del mock.
@@ -32,8 +42,12 @@ export async function risolviMezziConStatoDinamico(
 
   await sincronizzaPrenotazioniScadute({ mezzoIds });
 
-  const [prenotazioniAttive, corseAttive, corseTerminateConPosizione] =
-    await Promise.all([
+  const [
+    prenotazioniAttive,
+    corseAttive,
+    corseTerminateConPosizione,
+    segnalazioniConImpattoOperativo,
+  ] = await Promise.all([
     prisma.prenotazione.findMany({
       where: {
         mezzoId: {
@@ -82,6 +96,23 @@ export async function risolviMezziConStatoDinamico(
         terminataAt: "desc",
       },
     }),
+    prisma.segnalazioneMezzo.findMany({
+      where: {
+        mezzoId: {
+          in: mezzoIds,
+        },
+        stato: {
+          in: [
+            ...STATI_SEGNALAZIONE_NON_DISPONIBILE,
+            ...STATI_SEGNALAZIONE_MANUTENTIVA,
+          ],
+        },
+      },
+      select: {
+        mezzoId: true,
+        stato: true,
+      },
+    }),
   ]);
 
   const mezziPrenotati = new Set(
@@ -93,6 +124,19 @@ export async function risolviMezziConStatoDinamico(
       corsa.stato === "IN_PAUSA" ? "IN_PAUSA" : "IN_USO",
     ]),
   );
+  const mezziInManutenzione = new Set<string>();
+  const mezziNonDisponibiliPerSegnalazione = new Set<string>();
+
+  for (const segnalazione of segnalazioniConImpattoOperativo) {
+    if (STATI_SEGNALAZIONE_MANUTENTIVA.includes(segnalazione.stato)) {
+      mezziInManutenzione.add(segnalazione.mezzoId);
+      continue;
+    }
+
+    if (STATI_SEGNALAZIONE_NON_DISPONIBILE.includes(segnalazione.stato)) {
+      mezziNonDisponibiliPerSegnalazione.add(segnalazione.mezzoId);
+    }
+  }
   const ultimePosizioniFineCorsa = new Map<
     string,
     { latitudine: number; longitudine: number }
@@ -112,13 +156,24 @@ export async function risolviMezziConStatoDinamico(
   }
 
   return mezziBase.map((mezzo) => {
+    const mezzoInManutenzione = mezziInManutenzione.has(mezzo.id);
     const statoCorsa = mezziInCorsa.get(mezzo.id);
     const mezzoPrenotato = mezziPrenotati.has(mezzo.id);
     const mezzoConAttivitaAperta = Boolean(statoCorsa) || mezzoPrenotato;
     const ultimaPosizioneFineCorsa = ultimePosizioniFineCorsa.get(mezzo.id);
     let mezzoRisolto = mezzo;
 
-    if (!STATI_BLOCCANTI.includes(mezzo.stato)) {
+    if (mezzoInManutenzione) {
+      mezzoRisolto = {
+        ...mezzoRisolto,
+        stato: "IN_MANUTENZIONE",
+      };
+    } else if (mezziNonDisponibiliPerSegnalazione.has(mezzo.id)) {
+      mezzoRisolto = {
+        ...mezzoRisolto,
+        stato: "NON_DISPONIBILE",
+      };
+    } else if (!STATI_BLOCCANTI.includes(mezzo.stato)) {
       if (statoCorsa) {
         mezzoRisolto = {
           ...mezzoRisolto,
