@@ -2,6 +2,7 @@ import type { Mezzo } from "@/types/mobilita";
 
 type MezzoCardProps = {
   mezzo: Mezzo;
+  onApriSegnalazioneMezzo?: (mezzo: Mezzo) => void;
 };
 
 // Stili e testi compatti per mostrare subito lo stato operativo del mezzo.
@@ -24,7 +25,10 @@ const STATO_LABELS: Record<Mezzo["stato"], string> = {
 };
 
 // La card espone in modo leggibile i dati minimi utili per utente e operatore.
-export default function MezzoCard({ mezzo }: MezzoCardProps) {
+export default function MezzoCard({
+  mezzo,
+  onApriSegnalazioneMezzo,
+}: MezzoCardProps) {
   return (
     <article className="rounded-[1.75rem] border border-slate-200 bg-white p-5 shadow-[0_18px_50px_-28px_rgba(15,23,42,0.35)]">
       <div className="flex items-start justify-between gap-4">
@@ -93,6 +97,20 @@ export default function MezzoCard({ mezzo }: MezzoCardProps) {
           </p>
         </div>
       </div>
+
+      {onApriSegnalazioneMezzo ? (
+        <div className="mt-5 border-t border-slate-200 pt-4">
+          <button
+            type="button"
+            onClick={() => {
+              onApriSegnalazioneMezzo(mezzo);
+            }}
+            className="inline-flex w-full items-center justify-center rounded-full border border-rose-200 bg-rose-50 px-4 py-2.5 text-sm font-semibold text-rose-800 transition hover:bg-rose-100"
+          >
+            Segnala malfunzionamento
+          </button>
+        </div>
+      ) : null}
     </article>
   );
 }

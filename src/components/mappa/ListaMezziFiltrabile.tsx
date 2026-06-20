@@ -17,6 +17,7 @@ type ListaMezziFiltrabileProps = {
   messaggioVuoto: string;
   condizioneServizioSelezionata?: FiltroCondizioneServizio;
   onCondizioneServizioChange?: (valore: FiltroCondizioneServizio) => void;
+  onApriSegnalazioneMezzo?: (mezzo: Mezzo) => void;
 };
 
 export type FiltroCondizioneServizio =
@@ -147,6 +148,7 @@ export default function ListaMezziFiltrabile({
   messaggioVuoto,
   condizioneServizioSelezionata,
   onCondizioneServizioChange,
+  onApriSegnalazioneMezzo,
 }: ListaMezziFiltrabileProps) {
   const [ricerca, setRicerca] = useState("");
   const [tipoSelezionato, setTipoSelezionato] = useState<string>("TUTTI");
@@ -500,7 +502,13 @@ export default function ListaMezziFiltrabile({
       {mezziFiltrati.length > 0 ? (
         <div className="grid gap-5 xl:grid-cols-3">
           {mezziFiltrati.map((mezzo) => (
-            <MezzoCard key={mezzo.id} mezzo={mezzo} />
+            <MezzoCard
+              key={mezzo.id}
+              mezzo={mezzo}
+              onApriSegnalazioneMezzo={
+                modalita === "operatore" ? onApriSegnalazioneMezzo : undefined
+              }
+            />
           ))}
         </div>
       ) : (

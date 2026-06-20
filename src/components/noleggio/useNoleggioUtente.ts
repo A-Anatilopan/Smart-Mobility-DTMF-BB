@@ -151,6 +151,22 @@ export function useNoleggioUtente({
     };
   }, [prenotazioneAttiva]);
 
+  // I messaggi di esito devono restare visibili per qualche secondo nella zona
+  // mappa, senza obbligare l'utente a chiuderli sempre a mano.
+  useEffect(() => {
+    if (!messaggio) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      setMessaggio((corrente) => (corrente === messaggio ? null : corrente));
+    }, 10000);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [messaggio]);
+
   function pulisciRiepilogoTerminato() {
     setUltimaCorsaTerminata(null);
   }

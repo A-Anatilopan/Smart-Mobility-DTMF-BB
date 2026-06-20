@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import MappaServizioMock from "@/components/mappa/MappaServizioMock";
+import MappaOperatoreSegnalazioniClient from "@/components/operatore/MappaOperatoreSegnalazioniClient";
 import {
   areeServizioMock,
   mezziMock,
@@ -84,13 +84,10 @@ export default async function DashboardOperatorePage() {
       </section>
       {/* La home mostra solo orientamento rapido e mappa generale: i dettagli
           operativi vivono nelle sezioni dedicate del menu. */}
-      <MappaServizioMock
+      <MappaOperatoreSegnalazioniClient
         aree={areeServizioMock}
         mezzi={mezziMonitorati}
-        modalita="operatore"
         posizioneUtente={posizioneOperatoreMappaMock}
-        mostraPuntiChiave={false}
-        mostraPuntiInteresse={false}
       />
     </>
   );

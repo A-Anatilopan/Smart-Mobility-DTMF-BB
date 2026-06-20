@@ -388,17 +388,24 @@ function MezzoPopup({
         </div>
       ) : null}
 
-      {modalita === "utente" && onApriSegnalazioneMezzo ? (
+      {(modalita === "utente" || modalita === "operatore") &&
+      onApriSegnalazioneMezzo ? (
         <div className="border-t border-slate-200 pt-2">
           <button
             type="button"
             onClick={() => {
               onApriSegnalazioneMezzo(mezzo);
             }}
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-[11px] font-semibold text-rose-800 transition hover:bg-rose-100"
+            className={`inline-flex w-full items-center justify-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition ${
+              modalita === "operatore"
+                ? "border border-sky-200 bg-sky-50 text-sky-800 hover:bg-sky-100"
+                : "border border-rose-200 bg-rose-50 text-rose-800 hover:bg-rose-100"
+            }`}
           >
             <span aria-hidden="true">⚠</span>
-            Segnala un problema
+            {modalita === "operatore"
+              ? "Segnala malfunzionamento"
+              : "Segnala un problema"}
           </button>
         </div>
       ) : null}
@@ -505,6 +512,10 @@ export default function MappaServizioLeaflet({
       mezzo.stato === "NON_DISPONIBILE",
   );
   const puntiChiaveVisibili = mostraPuntiChiave ?? modalita !== "utente";
+  const messaggioMappaClassName =
+    noleggioUtente?.messaggio?.tipo === "successo"
+      ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+      : "border-rose-200 bg-rose-50 text-rose-700";
   const bounds = useMemo(
     () =>
       costruisciBounds({
@@ -675,6 +686,35 @@ export default function MappaServizioLeaflet({
               </span>
             )}
           </div>
+
+          {modalita === "utente" && noleggioUtente?.messaggio ? (
+            <div
+              className={`border-b px-4 py-3 ${messaggioMappaClassName}`}
+              aria-live="polite"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="space-y-1">
+                  <p className="text-xs font-semibold uppercase tracking-[0.16em]">
+                    {noleggioUtente.messaggio.tipo === "successo"
+                      ? "Aggiornamento noleggio"
+                      : "Attenzione sul noleggio"}
+                  </p>
+                  <p className="text-sm leading-6">
+                    {noleggioUtente.messaggio.testo}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    noleggioUtente.setMessaggio(null);
+                  }}
+                  className="inline-flex items-center justify-center rounded-full border border-current/15 bg-white/70 px-3 py-1 text-xs font-semibold transition hover:bg-white"
+                >
+                  Chiudi
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="relative">
             <MapContainer

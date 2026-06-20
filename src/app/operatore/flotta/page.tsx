@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import ListaMezziFiltrabile from "@/components/mappa/ListaMezziFiltrabile";
+import FlottaOperatoreClient from "@/components/operatore/FlottaOperatoreClient";
 import HeroSezioneOperatore from "@/components/operatore/HeroSezioneOperatore";
 import { mezziMock } from "@/lib/mappa/mock-data";
 import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
@@ -31,11 +31,7 @@ export default async function OperatoreFlottaPage() {
           </h2>
         </div>
 
-        <ListaMezziFiltrabile
-          mezzi={mezziMonitorati}
-          modalita="operatore"
-          messaggioVuoto="Prova a cambiare stato o tipo mezzo per ritrovare i veicoli che vuoi monitorare."
-        />
+        <FlottaOperatoreClient mezzi={mezziMonitorati} />
       </section>
     </>
   );

@@ -60,7 +60,6 @@ export default function PrenotazioneMezziDisponibili({
     ultimaCorsaTerminata,
     riepilogoConclusioneAperto,
     chiudiRiepilogoConclusione,
-    messaggio,
   } = noleggioUtente;
   const [adesso, setAdesso] = useState(() => Date.now());
 
@@ -369,18 +368,6 @@ export default function PrenotazioneMezziDisponibili({
             </div>
           )}
 
-          {messaggio ? (
-            <div
-              className={`mt-4 rounded-2xl border px-4 py-3 text-sm ${
-                messaggio.tipo === "successo"
-                  ? "border-emerald-200 bg-emerald-50 text-emerald-800"
-                  : "border-rose-200 bg-rose-50 text-rose-700"
-              }`}
-              aria-live="polite"
-            >
-              {messaggio.testo}
-            </div>
-          ) : null}
         </article>
 
         <div>

@@ -48,3 +48,12 @@ export type InputSegnalazioneMezzoUtente = {
   categoria: CategoriaSegnalazioneMezzo;
   descrizione: string;
 };
+
+// L'operatore invia gli stessi dati minimi dell'utente, ma l'origine viene
+// risolta lato server per tenere distinta la tracciabilita operativa.
+export type InputSegnalazioneMezzoOperatore = {
+  mezzoId: string;
+  mezzoCodice: string;
+  categoria: CategoriaSegnalazioneMezzo;
+  descrizione: string;
+};
