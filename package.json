@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "seed:test-accounts": "node --env-file=.env scripts/seed-test-accounts.mjs"
+    "seed:test-accounts": "node --env-file=.env scripts/seed-test-accounts.mjs",
+    "seed:demo": "node --env-file=.env scripts/seed-demo.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
