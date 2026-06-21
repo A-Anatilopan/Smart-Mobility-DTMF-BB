@@ -172,11 +172,13 @@ export async function aggiornaStatoMezzoPersistito(input: {
   stato: Mezzo["stato"];
   latitudine?: number;
   longitudine?: number;
+  batteria?: number;
 }): Promise<void> {
   const data: {
     stato: Mezzo["stato"];
     latitudine?: number;
     longitudine?: number;
+    batteria?: number;
   } = {
     stato: input.stato,
   };
@@ -187,6 +189,10 @@ export async function aggiornaStatoMezzoPersistito(input: {
   ) {
     data.latitudine = input.latitudine;
     data.longitudine = input.longitudine;
+  }
+
+  if (typeof input.batteria === "number") {
+    data.batteria = input.batteria;
   }
 
   await prisma.mezzo.update({

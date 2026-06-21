@@ -47,6 +47,7 @@ model Utente {
   segnalazioniPreseInCarico SegnalazioneMezzo[] @relation("OperatorePresaInCaricoSegnalazioneMezzo")
   sessioniOperativeMezzo SessioneOperativaMezzo[] @relation("OperatoreSessioneOperativaMezzo")
   corseTerminateDaOperatore Corsa[] @relation("OperatoreTermineCorsa")
+  gestioniMezziScarichi GestioneMezzoScarico[] @relation("OperatoreGestioneMezzoScarico")
 
   @@map("utenti")
 }
@@ -90,6 +91,7 @@ model Mezzo {
   corse            Corsa[]
   segnalazioni     SegnalazioneMezzo[]
   sessioniOperative SessioneOperativaMezzo[]
+  gestioniScarico  GestioneMezzoScarico[]
 
   @@map("mezzi")
 }
@@ -245,4 +247,40 @@ model SessioneOperativaMezzo {
   @@index([stato])
   @@index([mezzoId, stato])
   @@map("sessioni_operative_mezzo")
+}
+
+// ================================
+// M-05 - GESTIONE MEZZI SCARICHI
+// Copre la base persistente per: OP.09
+// Il mezzo resta NON_DISPONIBILE per tutta la filiera logistica, mentre questo
+// workflow registra in modo esplicito il ciclo di ritiro, ricarica e rimessa.
+// ================================
+
+model GestioneMezzoScarico {
+  id                     Int      @id @default(autoincrement())
+  codice                 String   @unique @db.VarChar(50)
+  operatoreId            Int
+  mezzoId                String   @db.VarChar(50)
+  stato                  String   @default("RITIRO_PROGRAMMATO_MEZZO_SCARICO") @db.VarChar(50)
+  batteriaRilevata       Int
+  noteOperative          String?  @db.Text
+  ritiroProgrammatoAt    DateTime @default(now())
+  mezzoRitiratoAt        DateTime?
+  caricaIniziataAt       DateTime?
+  caricaCompletataAt     DateTime?
+  rimessaProgrammataAt   DateTime?
+  rimessaCompletataAt    DateTime?
+  chiusaAt               DateTime?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  operatore Utente @relation("OperatoreGestioneMezzoScarico", fields: [operatoreId], references: [id], onDelete: Cascade)
+  mezzo     Mezzo  @relation(fields: [mezzoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+
+  @@index([operatoreId])
+  @@index([mezzoId])
+  @@index([stato])
+  @@index([chiusaAt])
+  @@index([mezzoId, chiusaAt])
+  @@map("gestioni_mezzi_scarichi")
 }

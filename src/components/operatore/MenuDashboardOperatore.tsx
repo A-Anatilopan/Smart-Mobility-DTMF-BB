@@ -26,6 +26,11 @@ const VOCI_MENU_OPERATORE: VoceMenuOperatore[] = [
     descrizione: "Mezzi da presidiare per batteria bassa o indisponibilita",
   },
   {
+    href: "/operatore/mezzi-scarichi",
+    etichetta: "Gestione mezzi scarichi",
+    descrizione: "Ritiro, ricarica e rimessa dei mezzi fuori disponibilita",
+  },
+  {
     href: "/operatore/segnalazioni",
     etichetta: "Segnalazioni",
     descrizione: "Spazio dedicato alle anomalie aperte e alla loro gestione",
@@ -53,7 +58,7 @@ export default function MenuDashboardOperatore() {
   return (
     <nav
       aria-label="Navigazione area operatore"
-      className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5"
+      className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6"
     >
       {VOCI_MENU_OPERATORE.map((voce) => {
         const attiva = isVoceAttiva(pathname, voce.href);

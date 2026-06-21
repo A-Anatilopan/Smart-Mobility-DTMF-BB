@@ -67,27 +67,38 @@ export default function PrioritaFlottaOperativa({
 
           <div className="mt-5 space-y-3">
             {mezziConBatteriaBassa.length > 0 ? (
-              mezziConBatteriaBassa.map((mezzo) => (
-                <div
-                  key={mezzo.id}
-                  className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-semibold text-slate-950">
-                        {mezzo.modello} ({mezzo.codice})
-                      </p>
-                      <p className="mt-1 text-sm text-slate-600">
-                        {mezzo.latitudine.toFixed(4)},{" "}
-                        {mezzo.longitudine.toFixed(4)}
+              <>
+                {mezziConBatteriaBassa.map((mezzo) => (
+                  <div
+                    key={mezzo.id}
+                    className="rounded-2xl border border-amber-100 bg-amber-50 px-4 py-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-semibold text-slate-950">
+                          {mezzo.modello} ({mezzo.codice})
+                        </p>
+                        <p className="mt-1 text-sm text-slate-600">
+                          {mezzo.latitudine.toFixed(4)},{" "}
+                          {mezzo.longitudine.toFixed(4)}
+                        </p>
+                      </div>
+                      <p className="text-lg font-semibold text-amber-800">
+                        {mezzo.batteria}%
                       </p>
                     </div>
-                    <p className="text-lg font-semibold text-amber-800">
-                      {mezzo.batteria}%
-                    </p>
                   </div>
+                ))}
+
+                <div className="pt-2">
+                  <Link
+                    href="/operatore/mezzi-scarichi"
+                    className="inline-flex items-center justify-center rounded-full bg-amber-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-amber-500"
+                  >
+                    Apri gestione mezzi scarichi
+                  </Link>
                 </div>
-              ))
+              </>
             ) : (
               <div className="rounded-2xl border border-dashed border-amber-200 bg-amber-50/65 px-4 py-4">
                 <p className="text-sm font-medium text-slate-700">
