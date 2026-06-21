@@ -47,6 +47,7 @@ model Utente {
   corse            Corsa[]
   segnalazioniMezzo SegnalazioneMezzo[] @relation("UtenteSegnalanteMezzo")
   segnalazioniPreseInCarico SegnalazioneMezzo[] @relation("OperatorePresaInCaricoSegnalazioneMezzo")
+  segnalazioniUrbane SegnalazioneUrbana[] @relation("AmministrazioneSegnalanteUrbana")
   sessioniOperativeMezzo SessioneOperativaMezzo[] @relation("OperatoreSessioneOperativaMezzo")
   corseTerminateDaOperatore Corsa[] @relation("OperatoreTermineCorsa")
   gestioniMezziScarichi GestioneMezzoScarico[] @relation("OperatoreGestioneMezzoScarico")
@@ -323,4 +324,34 @@ model GestioneMezzoScarico {
   @@index([chiusaAt])
   @@index([mezzoId, chiusaAt])
   @@map("gestioni_mezzi_scarichi")
+}
+
+// ================================
+// M-06 - SEGNALAZIONI URBANE
+// Copre la base persistente per: UC-10
+// User Stories future: AP.03
+// La PA puo aprire criticita territoriali con titolo, descrizione e
+// posizione opzionale, lasciando alla UI futura la scelta tra elenco e mappa.
+// ================================
+
+model SegnalazioneUrbana {
+  id               Int      @id @default(autoincrement())
+  codice           String   @unique @db.VarChar(50)
+  amministrazioneId Int
+  categoria        String   @db.VarChar(30)
+  titolo           String   @db.VarChar(120)
+  descrizione      String   @db.Text
+  indirizzo        String?  @db.VarChar(160)
+  latitudine       Decimal? @db.Decimal(10, 7)
+  longitudine      Decimal? @db.Decimal(10, 7)
+  stato            String   @default("APERTA") @db.VarChar(30)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  amministrazione Utente @relation("AmministrazioneSegnalanteUrbana", fields: [amministrazioneId], references: [id], onDelete: Cascade)
+
+  @@index([amministrazioneId, stato])
+  @@index([stato, createdAt])
+  @@index([categoria, stato])
+  @@map("segnalazioni_urbane")
 }

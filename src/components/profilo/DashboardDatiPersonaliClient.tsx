@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { patenteScaduta } from "@/lib/patenti";
 
 type ProfiloUtenteView = {
   nome: string;
@@ -28,6 +29,12 @@ type FormPatente = {
   numeroPatente: string;
   categoriaPatente: string;
   scadenzaPatente: string;
+};
+
+type StatoPatenteView = {
+  etichetta: "Valida" | "Scaduta" | "Incompleta" | "Non inserita";
+  descrizione: string;
+  className: string;
 };
 
 const CATEGORIE_PATENTE = ["", "AM", "A1", "A2", "A", "B"] as const;
@@ -59,7 +66,45 @@ function descriviPatente(profilo: ProfiloUtenteView): string {
     return "Non inserita";
   }
 
-  return `${profilo.categoriaPatente} - ${profilo.numeroPatente} · scadenza ${formattaDataItaliana(profilo.scadenzaPatente)}`;
+  return `${profilo.categoriaPatente} - ${profilo.numeroPatente} | scadenza ${formattaDataItaliana(profilo.scadenzaPatente)}`;
+}
+
+function risolviStatoPatente(profilo: ProfiloUtenteView): StatoPatenteView {
+  const haNumero = Boolean(profilo.numeroPatente);
+  const haCategoria = Boolean(profilo.categoriaPatente);
+  const haScadenza = Boolean(profilo.scadenzaPatente);
+
+  if (!haNumero && !haCategoria && !haScadenza) {
+    return {
+      etichetta: "Non inserita",
+      descrizione: "Non hai ancora registrato una patente nel profilo.",
+      className: "border-slate-200 bg-slate-50 text-slate-700",
+    };
+  }
+
+  if (!haNumero || !haCategoria || !haScadenza) {
+    return {
+      etichetta: "Incompleta",
+      descrizione:
+        "Completa numero, categoria e scadenza per usare i mezzi che richiedono patente.",
+      className: "border-amber-200 bg-amber-50 text-amber-800",
+    };
+  }
+
+  if (patenteScaduta(profilo.scadenzaPatente)) {
+    return {
+      etichetta: "Scaduta",
+      descrizione:
+        "La data di scadenza registrata risulta superata. Aggiornala prima del prossimo utilizzo.",
+      className: "border-rose-200 bg-rose-50 text-rose-800",
+    };
+  }
+
+  return {
+    etichetta: "Valida",
+    descrizione: `Patente ${profilo.categoriaPatente} valida fino al ${formattaDataItaliana(profilo.scadenzaPatente as string)}.`,
+    className: "border-emerald-200 bg-emerald-50 text-emerald-800",
+  };
 }
 
 async function leggiErroreRisposta(response: Response): Promise<string> {
@@ -82,6 +127,7 @@ export default function DashboardDatiPersonaliClient({
   );
   const [feedback, setFeedback] = useState<MessaggioFeedback>(null);
   const [isPending, startTransition] = useTransition();
+  const statoPatente = risolviStatoPatente(profilo);
 
   useEffect(() => {
     if (!feedback) {
@@ -243,6 +289,22 @@ export default function DashboardDatiPersonaliClient({
               </p>
               <p className="mt-2 text-base font-semibold text-slate-950">
                 {descriviPatente(profilo)}
+              </p>
+            </div>
+
+            {/* Questo riepilogo rende immediato se la patente e utilizzabile
+                per il noleggio senza costringere l'utente a interpretare i campi. */}
+            <div
+              className={`rounded-2xl border px-4 py-4 sm:col-span-2 ${statoPatente.className}`}
+            >
+              <p className="text-xs font-semibold uppercase tracking-[0.16em]">
+                Stato patente
+              </p>
+              <p className="mt-2 text-base font-semibold">
+                {statoPatente.etichetta}
+              </p>
+              <p className="mt-1 text-sm leading-6">
+                {statoPatente.descrizione}
               </p>
             </div>
           </div>

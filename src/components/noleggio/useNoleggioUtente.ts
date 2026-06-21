@@ -28,6 +28,12 @@ export type CorsaTerminataConMezzo = CorsaNoleggio & {
   mezzo: MezzoSintetico | null;
 };
 
+export type ProfiloPatenteUtente = {
+  numeroPatente: string | null;
+  categoriaPatente: string | null;
+  scadenzaPatente: string | null;
+};
+
 type PrenotazioneApiResponse = {
   errore?: string;
   messaggio?: string;
@@ -53,9 +59,11 @@ type UseNoleggioUtenteInput = {
   prenotazioneAttivaIniziale: PrenotazioneAttivaConMezzo | null;
   corsaAttivaIniziale: CorsaAttivaConMezzo | null;
   ultimaCorsaTerminataIniziale: CorsaTerminataConMezzo | null;
+  profiloPatente: ProfiloPatenteUtente;
 };
 
 export type NoleggioUtenteController = {
+  profiloPatente: ProfiloPatenteUtente;
   prenotazioneAttiva: PrenotazioneAttivaConMezzo | null;
   corsaAttiva: CorsaAttivaConMezzo | null;
   ultimaCorsaTerminata: CorsaTerminataConMezzo | null;
@@ -85,6 +93,7 @@ export function useNoleggioUtente({
   prenotazioneAttivaIniziale,
   corsaAttivaIniziale,
   ultimaCorsaTerminataIniziale,
+  profiloPatente,
 }: UseNoleggioUtenteInput): NoleggioUtenteController {
   const [prenotazioneAttiva, setPrenotazioneAttiva] =
     useState<PrenotazioneAttivaConMezzo | null>(prenotazioneAttivaIniziale);
@@ -499,6 +508,7 @@ export function useNoleggioUtente({
   }
 
   return {
+    profiloPatente,
     prenotazioneAttiva,
     corsaAttiva,
     ultimaCorsaTerminata,

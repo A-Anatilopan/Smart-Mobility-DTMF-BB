@@ -24,6 +24,7 @@ import {
   MESSAGGIO_MEZZO_TROPPO_LONTANO_PER_SBLOCCO,
   operatoreVicinoAlMezzo,
 } from "@/lib/operazioni-mezzo-operatore.shared";
+import { patenteCompatibile, patenteScaduta } from "@/lib/patenti";
 import type { Coordinate, Mezzo, PuntoInteresseMappa } from "@/types/mobilita";
 import type {
   MappaServizioProps,
@@ -185,12 +186,44 @@ function MezzoPopup({
   const statoCorsaSulMezzo = corsaSulMezzo
     ? controllerNoleggio?.corsaAttiva?.stato
     : null;
-  const puoPrenotare =
+  const patenteRichiesta = mezzo.patenteRichiesta;
+  const profiloPatente = controllerNoleggio?.profiloPatente ?? null;
+  let messaggioBloccoPatente: string | null = null;
+
+  // Il backend resta il controllo definitivo, ma nel popup anticipiamo subito
+  // il motivo del blocco per evitare tentativi inutili e piu frustrazione.
+  if (
+    controllerNoleggio &&
+    patenteRichiesta !== "Nessuna" &&
+    profiloPatente
+  ) {
+    if (
+      !profiloPatente.numeroPatente ||
+      !profiloPatente.categoriaPatente ||
+      !profiloPatente.scadenzaPatente
+    ) {
+      messaggioBloccoPatente =
+        "Per questo mezzo devi completare numero, categoria e scadenza patente nel tuo profilo.";
+    } else if (patenteScaduta(profiloPatente.scadenzaPatente)) {
+      messaggioBloccoPatente =
+        "La patente registrata risulta scaduta. Aggiorna la data di scadenza prima di continuare.";
+    } else if (
+      !patenteCompatibile(
+        profiloPatente.categoriaPatente,
+        patenteRichiesta,
+      )
+    ) {
+      messaggioBloccoPatente =
+        "La categoria patente registrata non e compatibile con questo mezzo.";
+    }
+  }
+
+  const puoPrenotareBase =
     Boolean(controllerNoleggio) &&
     mezzo.stato === "DISPONIBILE" &&
     !prenotazioneSulMezzo &&
     !corsaSulMezzo;
-  const puoAvviare =
+  const puoAvviareBase =
     Boolean(controllerNoleggio) &&
     (prenotazioneSulMezzo ||
       statoCorsaSulMezzo === "IN_PAUSA" ||
@@ -198,6 +231,8 @@ function MezzoPopup({
         !(controllerNoleggio?.prenotazioneBloccata ?? false) &&
         !prenotazioneSulMezzo &&
         !corsaSulMezzo));
+  const puoPrenotare = puoPrenotareBase && !messaggioBloccoPatente;
+  const puoAvviare = puoAvviareBase && !messaggioBloccoPatente;
   const puoMettereInPausa =
     Boolean(controllerNoleggio) && statoCorsaSulMezzo === "ATTIVA";
   const puoTerminare =
@@ -310,11 +345,24 @@ function MezzoPopup({
             Azioni sul mezzo
           </p>
 
+          {messaggioBloccoPatente ? (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-2 py-1.5 text-[11px] leading-4 text-amber-900">
+              <p>{messaggioBloccoPatente}</p>
+              <a
+                href="/dashboard/dati-personali"
+                className="mt-1 inline-flex text-[11px] font-semibold text-amber-950 underline underline-offset-2"
+              >
+                Aggiorna i dati patente
+              </a>
+            </div>
+          ) : null}
+
           <div className="grid grid-cols-2 gap-1.5">
-            {puoPrenotare ? (
+            {puoPrenotareBase ? (
               <button
                 type="button"
                 disabled={
+                  Boolean(messaggioBloccoPatente) ||
                   controllerNoleggio.prenotazioneBloccata ||
                   controllerNoleggio.isSubmittingMezzoId !== null ||
                   controllerNoleggio.isAnnullamentoInCorso ||
@@ -334,10 +382,11 @@ function MezzoPopup({
               </button>
             ) : null}
 
-            {puoAvviare ? (
+            {puoAvviareBase ? (
               <button
                 type="button"
                 disabled={
+                  Boolean(messaggioBloccoPatente) ||
                   controllerNoleggio.isAvvioInCorso ||
                   controllerNoleggio.isSubmittingMezzoId !== null ||
                   controllerNoleggio.isAnnullamentoInCorso ||

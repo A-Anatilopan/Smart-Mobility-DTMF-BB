@@ -8,6 +8,7 @@ import {
   useNoleggioUtente,
   type CorsaAttivaConMezzo,
   type CorsaTerminataConMezzo,
+  type ProfiloPatenteUtente,
   type PrenotazioneAttivaConMezzo,
 } from "@/components/noleggio/useNoleggioUtente";
 import type {
@@ -24,6 +25,7 @@ type DashboardUtenteNoleggioClientProps = {
   prenotazioneAttivaIniziale: PrenotazioneAttivaConMezzo | null;
   corsaAttivaIniziale: CorsaAttivaConMezzo | null;
   ultimaCorsaTerminataIniziale: CorsaTerminataConMezzo | null;
+  profiloPatente: ProfiloPatenteUtente;
 };
 
 // Questo wrapper condivide lo stesso hook tra pannello e mappa, cosi i popup
@@ -36,6 +38,7 @@ export default function DashboardUtenteNoleggioClient({
   prenotazioneAttivaIniziale,
   corsaAttivaIniziale,
   ultimaCorsaTerminataIniziale,
+  profiloPatente,
 }: DashboardUtenteNoleggioClientProps) {
   const [mezzoSegnalazioneSelezionato, setMezzoSegnalazioneSelezionato] =
     useState<Mezzo | null>(null);
@@ -43,6 +46,7 @@ export default function DashboardUtenteNoleggioClient({
     prenotazioneAttivaIniziale,
     corsaAttivaIniziale,
     ultimaCorsaTerminataIniziale,
+    profiloPatente,
   });
   const mezzoPrenotato = noleggioUtente.prenotazioneAttiva?.mezzo ?? null;
   const mezzoInCorsa = noleggioUtente.corsaAttiva?.mezzo ?? null;

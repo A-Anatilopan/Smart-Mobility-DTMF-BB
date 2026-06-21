@@ -2,11 +2,12 @@
 
 import { useEffect, useState } from "react";
 import MappaServizioMock from "@/components/mappa/MappaServizioMock";
-import type { AreaServizio, Mezzo } from "@/types/mobilita";
+import type { AreaServizio, Mezzo, PosizioneUtenteMappa } from "@/types/mobilita";
 
 type DashboardAmministrazioneClientProps = {
   aree: AreaServizio[];
   mezziIniziali: Mezzo[];
+  posizioneFocus?: PosizioneUtenteMappa | null;
 };
 
 type FlottaAdminApiResponse = {
@@ -19,6 +20,7 @@ type FlottaAdminApiResponse = {
 export default function DashboardAmministrazioneClient({
   aree,
   mezziIniziali,
+  posizioneFocus = null,
 }: DashboardAmministrazioneClientProps) {
   const [mezzi, setMezzi] = useState(mezziIniziali);
 
@@ -115,12 +117,18 @@ export default function DashboardAmministrazioneClient({
         </div>
       </section>
 
-      <MappaServizioMock
-        aree={aree}
-        mezzi={mezzi}
-        modalita="amministrazione"
-        mostraPuntiChiave={false}
-      />
+      <section
+        id="mappa-servizio-amministrazione"
+        className="scroll-mt-6"
+      >
+        <MappaServizioMock
+          aree={aree}
+          mezzi={mezzi}
+          modalita="amministrazione"
+          posizioneUtente={posizioneFocus}
+          mostraPuntiChiave={false}
+        />
+      </section>
     </section>
   );
 }

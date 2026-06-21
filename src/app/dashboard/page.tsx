@@ -76,6 +76,13 @@ export default async function DashboardUtentePage() {
         mezziMappa={mezziMappaUtente}
         mezziDisponibili={mezziDisponibili}
         posizioneUtente={posizioneUtenteMappaMock}
+        profiloPatente={{
+          numeroPatente: utente.numeroPatente,
+          categoriaPatente: utente.categoriaPatente,
+          scadenzaPatente: utente.scadenzaPatente
+            ? utente.scadenzaPatente.toISOString().slice(0, 10)
+            : null,
+        }}
         prenotazioneAttivaIniziale={
           prenotazioneAttiva
             ? {

@@ -23,6 +23,7 @@ import {
   COSTO_SBLOCCO_CENT,
 } from "@/lib/tariffe-noleggio";
 
+// Durata standard della prenotazione: 15 minuti.
 const DURATA_PRENOTAZIONE_MINUTI = 15;
 
 function generaCodiceDominio(prefisso: "PRE" | "COR"): string {
