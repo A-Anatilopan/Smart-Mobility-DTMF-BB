@@ -23,7 +23,7 @@ const VOCI_MENU: VoceMenu[] = [
   {
     href: "/dashboard/metodi-pagamento",
     etichetta: "Metodi di pagamento",
-    descrizione: "Area in preparazione",
+    descrizione: "Salva, scegli e rimuovi i metodi per le tue corse",
   },
   {
     href: "/dashboard/dati-personali",

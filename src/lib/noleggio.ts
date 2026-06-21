@@ -31,6 +31,10 @@ function generaCodiceDominio(prefisso: "PRE" | "COR"): string {
   return `${prefisso}-${randomUUID().replaceAll("-", "")}`;
 }
 
+function generaCodiceAddebitoMock(): string {
+  return `PAY-${randomUUID().replaceAll("-", "")}`;
+}
+
 function decimalToNumber(
   valore: Prisma.Decimal | number | null | undefined,
 ): number | null {
@@ -105,6 +109,15 @@ function mappaCorsaDominio(corsa: Corsa): CorsaNoleggio {
       costoUtilizzoCent: corsa.costoUtilizzoCent,
       costoPausaCent: corsa.costoPausaCent,
       costoTotaleCent: corsa.costoTotaleCent,
+    },
+    pagamento: {
+      circuito: corsa.metodoPagamentoCircuito,
+      ultime4: corsa.metodoPagamentoUltime4,
+      alias: corsa.metodoPagamentoAlias,
+      stato: corsa.pagamentoStato,
+      autorizzatoAt: corsa.pagamentoAutorizzatoAt,
+      addebitatoAt: corsa.pagamentoAddebitatoAt,
+      codiceAddebitoMock: corsa.codiceAddebitoMock,
     },
     modalitaTerminazione: corsa.modalitaTerminazione,
     notaTerminazioneOperatore: corsa.notaTerminazioneOperatore,
@@ -616,6 +629,11 @@ export async function scadePrenotazioneNoleggio(input: {
 export async function avviaCorsaDaPrenotazione(input: {
   prenotazioneId: number;
   posizioneInizio?: Coordinate | null;
+  metodoPagamento: {
+    circuito: string;
+    ultime4: string;
+    alias: string | null;
+  };
 }): Promise<CorsaNoleggio> {
   return prisma.$transaction(async (tx) => {
     const prenotazione = await tx.prenotazione.findUnique({
@@ -671,6 +689,11 @@ export async function avviaCorsaDaPrenotazione(input: {
         ultimaRipresaAt: new Date(),
         latitudineInizio: input.posizioneInizio?.latitudine,
         longitudineInizio: input.posizioneInizio?.longitudine,
+        metodoPagamentoCircuito: input.metodoPagamento.circuito,
+        metodoPagamentoUltime4: input.metodoPagamento.ultime4,
+        metodoPagamentoAlias: input.metodoPagamento.alias,
+        pagamentoStato: "AUTORIZZATO",
+        pagamentoAutorizzatoAt: new Date(),
       },
     });
 
@@ -695,6 +718,11 @@ export async function avviaCorsaDiretta(input: {
   utenteId: number;
   mezzoId: string;
   posizioneInizio?: Coordinate | null;
+  metodoPagamento: {
+    circuito: string;
+    ultime4: string;
+    alias: string | null;
+  };
 }): Promise<CorsaNoleggio> {
   return prisma.$transaction(async (tx) => {
     await Promise.all([
@@ -783,6 +811,11 @@ export async function avviaCorsaDiretta(input: {
         ultimaRipresaAt: new Date(),
         latitudineInizio: input.posizioneInizio?.latitudine,
         longitudineInizio: input.posizioneInizio?.longitudine,
+        metodoPagamentoCircuito: input.metodoPagamento.circuito,
+        metodoPagamentoUltime4: input.metodoPagamento.ultime4,
+        metodoPagamentoAlias: input.metodoPagamento.alias,
+        pagamentoStato: "AUTORIZZATO",
+        pagamentoAutorizzatoAt: new Date(),
       },
     });
 
@@ -922,6 +955,10 @@ async function chiudiCorsaPersistente(input: {
   const costoPausaCent = calcolaCostoPausaTotaleCent(durataPausaTotaleMs);
   const costoTotaleCent =
     costoSbloccoCent + costoUtilizzoCent + costoPausaCent;
+  const pagamentoGiaTracciato = input.corsa.pagamentoStato === "ADDEBITATO";
+  const codiceAddebitoMock =
+    input.corsa.codiceAddebitoMock ??
+    (pagamentoGiaTracciato ? input.corsa.codiceAddebitoMock : generaCodiceAddebitoMock());
 
   const corsaAggiornata = await prisma.corsa.update({
     where: { id: input.corsa.id },
@@ -936,6 +973,9 @@ async function chiudiCorsaPersistente(input: {
       costoUtilizzoCent,
       costoPausaCent,
       costoTotaleCent,
+      pagamentoStato: "ADDEBITATO",
+      pagamentoAddebitatoAt: terminataAt,
+      codiceAddebitoMock,
       terminataDaOperatoreId: input.terminataDaOperatoreId ?? null,
       modalitaTerminazione: input.modalitaTerminazione ?? null,
       notaTerminazioneOperatore: input.notaTerminazioneOperatore ?? null,

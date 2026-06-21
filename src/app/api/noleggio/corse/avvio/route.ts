@@ -8,6 +8,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { verificaSessione } from "@/lib/auth";
 import { calcolaDistanzaMetri } from "@/lib/geolocalizzazione";
 import { posizioneUtenteMappaMock } from "@/lib/mappa/mock-data";
+import { richiediMetodoPagamentoAttivoUtente } from "@/lib/metodi-pagamento";
 import { trovaMezzoPerId } from "@/lib/mezzi";
 import {
   avviaCorsaDaPrenotazione,
@@ -69,6 +70,12 @@ export async function POST(request: NextRequest) {
         { status: 403 },
       );
     }
+
+    // UT.10: anche l'avvio diretto o da prenotazione richiede almeno un
+    // metodo di pagamento attivo, altrimenti la corsa non puo partire.
+    const metodoPagamentoAttivo = await richiediMetodoPagamentoAttivoUtente(
+      utente.id,
+    );
 
     const body = await request.json();
     const mezzoId = typeof body?.mezzoId === "string" ? body.mezzoId.trim() : "";
@@ -170,11 +177,21 @@ export async function POST(request: NextRequest) {
       ? await avviaCorsaDaPrenotazione({
           prenotazioneId: prenotazioneValida.id,
           posizioneInizio,
+          metodoPagamento: {
+            circuito: metodoPagamentoAttivo.circuito,
+            ultime4: metodoPagamentoAttivo.ultime4,
+            alias: metodoPagamentoAttivo.alias,
+          },
         })
       : await avviaCorsaDiretta({
           utenteId: utente.id,
           mezzoId: mezzo.id,
           posizioneInizio,
+          metodoPagamento: {
+            circuito: metodoPagamentoAttivo.circuito,
+            ultime4: metodoPagamentoAttivo.ultime4,
+            alias: metodoPagamentoAttivo.alias,
+          },
         });
 
     return NextResponse.json(
@@ -211,6 +228,8 @@ export async function POST(request: NextRequest) {
             messaggio.includes("gia prenotato") ||
             messaggio.includes("gia coinvolto in una corsa attiva")
           ? 409
+          : messaggio.includes("Devi salvare almeno un metodo di pagamento attivo")
+            ? 403
           : 500;
 
     console.error("[AVVIO CORSA ERROR]", error);

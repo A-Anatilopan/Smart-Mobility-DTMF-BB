@@ -41,6 +41,7 @@ model Utente {
   updatedAt        DateTime  @updatedAt
 
   sessioni         Sessione[]
+  metodiPagamento  MetodoPagamento[]
   prenotazioni     Prenotazione[]
   corse            Corsa[]
   segnalazioniMezzo SegnalazioneMezzo[] @relation("UtenteSegnalanteMezzo")
@@ -160,6 +161,13 @@ model Corsa {
   costoUtilizzoCent  Int       @default(0)
   costoPausaCent     Int       @default(0)
   costoTotaleCent    Int       @default(0)
+  metodoPagamentoCircuito String? @db.VarChar(30)
+  metodoPagamentoUltime4 String? @db.VarChar(4)
+  metodoPagamentoAlias String? @db.VarChar(80)
+  pagamentoStato     String?   @db.VarChar(30)
+  pagamentoAutorizzatoAt DateTime?
+  pagamentoAddebitatoAt DateTime?
+  codiceAddebitoMock String?   @db.VarChar(50)
   modalitaTerminazione String? @db.VarChar(30)
   notaTerminazioneOperatore String? @db.Text
   createdAt          DateTime  @default(now())
@@ -174,6 +182,37 @@ model Corsa {
   @@index([terminataDaOperatoreId])
   @@index([mezzoId, stato])
   @@map("corse")
+}
+
+// ================================
+// M-04 - METODI DI PAGAMENTO
+// Copre la base strutturale per: UC-06
+// User Stories future: UT.10
+// Nota: il progetto non usa gateway reali. Il tokenMock simula il riferimento
+// al provider di pagamento senza salvare numero completo carta o CVV.
+// ================================
+
+model MetodoPagamento {
+  id           Int      @id @default(autoincrement())
+  utenteId     Int
+  tipo         String   @default("CARTA") @db.VarChar(20)
+  circuito     String   @db.VarChar(30)
+  intestatario String   @db.VarChar(120)
+  ultime4      String   @db.VarChar(4)
+  scadenzaMese Int
+  scadenzaAnno Int
+  alias        String?  @db.VarChar(80)
+  tokenMock    String   @unique @db.VarChar(80)
+  stato        String   @default("ATTIVO") @db.VarChar(20)
+  predefinito  Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  utente Utente @relation(fields: [utenteId], references: [id], onDelete: Cascade)
+
+  @@index([utenteId, stato])
+  @@index([utenteId, predefinito])
+  @@map("metodi_pagamento")
 }
 
 // ================================

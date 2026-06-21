@@ -119,6 +119,43 @@ function formattaImportoCent(cent: number): string {
   }).format(cent / 100);
 }
 
+function descriviMetodoPagamentoCorrente(
+  pagamento: MonitoraggioNoleggioUtente["corsa"] extends infer TCorsa
+    ? TCorsa extends { pagamento: infer TPagamento }
+      ? TPagamento
+      : never
+    : never,
+): string {
+  if (!pagamento) {
+    return "Non disponibile";
+  }
+
+  if (
+    typeof pagamento === "object" &&
+    pagamento !== null &&
+    "alias" in pagamento &&
+    typeof pagamento.alias === "string" &&
+    pagamento.alias.trim().length > 0
+  ) {
+    return pagamento.alias;
+  }
+
+  if (
+    typeof pagamento === "object" &&
+    pagamento !== null &&
+    "circuito" in pagamento &&
+    "ultime4" in pagamento &&
+    typeof pagamento.circuito === "string" &&
+    typeof pagamento.ultime4 === "string" &&
+    pagamento.circuito.trim().length > 0 &&
+    pagamento.ultime4.trim().length > 0
+  ) {
+    return `${pagamento.circuito} •••• ${pagamento.ultime4}`;
+  }
+
+  return "Non disponibile";
+}
+
 function formattaDurata(durataMillisecondi: number): string {
   const totaleSecondi = Math.max(Math.floor(durataMillisecondi / 1000), 0);
   const ore = Math.floor(totaleSecondi / 3600);
@@ -892,6 +929,17 @@ export default function MonitoraggioNoleggioUtente({
                       </p>
                     </div>
                   </div>
+
+                  <div className="mt-4 rounded-2xl border border-amber-100 bg-white/80 px-4 py-3">
+                    <p className="text-sm font-semibold text-slate-950">
+                      Metodo di pagamento
+                    </p>
+                    <p className="mt-1 text-sm text-slate-700">
+                      La prenotazione richiede che l&apos;utente abbia almeno un
+                      metodo attivo. Il metodo effettivamente usato viene
+                      associato alla corsa nel momento dell&apos;avvio.
+                    </p>
+                  </div>
                 </div>
               ) : null}
 
@@ -972,6 +1020,31 @@ export default function MonitoraggioNoleggioUtente({
                       </div>
                     </div>
                   ) : null}
+
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-2xl border border-emerald-100 bg-white/80 px-4 py-3">
+                      <p className="text-sm font-semibold text-slate-950">
+                        Metodo di pagamento usato
+                      </p>
+                      <p className="mt-1 text-sm text-slate-700">
+                        {descriviMetodoPagamentoCorrente(
+                          monitoraggio.corsa.pagamento,
+                        )}
+                      </p>
+                    </div>
+                    <div className="rounded-2xl border border-emerald-100 bg-white/80 px-4 py-3">
+                      <p className="text-sm font-semibold text-slate-950">
+                        Stato pagamento
+                      </p>
+                      <p className="mt-1 text-sm text-slate-700">
+                        {monitoraggio.corsa.pagamento.stato === "ADDEBITATO"
+                          ? "Addebito completato"
+                          : monitoraggio.corsa.pagamento.stato === "AUTORIZZATO"
+                            ? "Autorizzazione attiva"
+                            : "Non disponibile"}
+                      </p>
+                    </div>
+                  </div>
 
                   <div className="mt-5 rounded-3xl border border-slate-200 bg-white/85 p-5">
                     <p className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">

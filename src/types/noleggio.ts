@@ -19,6 +19,16 @@ export type DettaglioCostoCorsa = {
   costoTotaleCent: number;
 };
 
+export type TracciaPagamentoCorsa = {
+  circuito: string | null;
+  ultime4: string | null;
+  alias: string | null;
+  stato: string | null;
+  autorizzatoAt: Date | string | null;
+  addebitatoAt: Date | string | null;
+  codiceAddebitoMock: string | null;
+};
+
 // Contratto iniziale della prenotazione: tiene insieme utente, mezzo scelto e
 // finestra temporale di validita prima dell'avvio della corsa.
 export type PrenotazioneNoleggio = {
@@ -52,6 +62,7 @@ export type CorsaNoleggio = {
   posizioneInizio: Coordinate | null;
   posizioneFine: Coordinate | null;
   costi: DettaglioCostoCorsa;
+  pagamento: TracciaPagamentoCorsa;
   modalitaTerminazione: string | null;
   notaTerminazioneOperatore: string | null;
 };

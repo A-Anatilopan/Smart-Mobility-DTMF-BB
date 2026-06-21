@@ -36,6 +36,28 @@ function formattaImportoCent(cent: number): string {
   }).format(cent / 100);
 }
 
+function descriviPagamento(
+  pagamento: {
+    alias: string | null;
+    circuito: string | null;
+    ultime4: string | null;
+  } | null | undefined,
+): string {
+  if (!pagamento) {
+    return "Non disponibile";
+  }
+
+  if (pagamento.alias?.trim()) {
+    return pagamento.alias;
+  }
+
+  if (pagamento.circuito && pagamento.ultime4) {
+    return `${pagamento.circuito} •••• ${pagamento.ultime4}`;
+  }
+
+  return "Non disponibile";
+}
+
 function formattaDurata(durataMillisecondi: number): string {
   const totaleSecondi = Math.max(Math.floor(durataMillisecondi / 1000), 0);
   const ore = Math.floor(totaleSecondi / 3600);
@@ -165,6 +187,14 @@ export default function PrenotazioneMezziDisponibili({
                   {formattaDurata(ultimaCorsaTerminata.durataPausaMs)}
                 </p>
               </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                  Metodo usato
+                </p>
+                <p className="mt-1 text-sm font-semibold text-slate-950">
+                  {descriviPagamento(ultimaCorsaTerminata.pagamento)}
+                </p>
+              </div>
               <div className="rounded-2xl border border-slate-950 bg-slate-950 px-4 py-3 text-white">
                 <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-200">
                   Totale
@@ -236,6 +266,10 @@ export default function PrenotazioneMezziDisponibili({
                   {corsaAttiva.mezzo
                     ? `${corsaAttiva.mezzo.modello} (${corsaAttiva.mezzo.codice})`
                     : corsaAttiva.mezzoId}
+                </p>
+                <p>
+                  <span className="font-semibold">Metodo associato:</span>{" "}
+                  {descriviPagamento(corsaAttiva.pagamento)}
                 </p>
               </div>
 
@@ -342,6 +376,10 @@ export default function PrenotazioneMezziDisponibili({
                   {ultimaCorsaTerminata.mezzo
                     ? `${ultimaCorsaTerminata.mezzo.modello} (${ultimaCorsaTerminata.mezzo.codice})`
                     : ultimaCorsaTerminata.mezzoId}
+                </p>
+                <p>
+                  <span className="font-semibold">Addebito finale:</span>{" "}
+                  {descriviPagamento(ultimaCorsaTerminata.pagamento)}
                 </p>
               </div>
               <div className="mt-5">

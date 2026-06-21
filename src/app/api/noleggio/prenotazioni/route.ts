@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verificaSessione } from "@/lib/auth";
+import { richiediMetodoPagamentoAttivoUtente } from "@/lib/metodi-pagamento";
 import { trovaMezzoPerId } from "@/lib/mezzi";
 import { creaPrenotazioneNoleggio } from "@/lib/noleggio";
 import { normalizzaRuolo, RUOLI } from "@/lib/ruoli";
@@ -64,6 +65,11 @@ export async function POST(request: NextRequest) {
         { status: 403 },
       );
     }
+
+    // UT.10: prima di creare una prenotazione l'utente deve aver gia salvato
+    // almeno un metodo di pagamento attivo, cosi il flusso resta coerente con
+    // l'addebito automatico richiesto dal dominio.
+    await richiediMetodoPagamentoAttivoUtente(utente.id);
 
     const body = await request.json();
     const mezzoId =
@@ -145,6 +151,8 @@ export async function POST(request: NextRequest) {
       messaggio.includes("gia prenotato") ||
       messaggio.includes("gia coinvolto in una corsa attiva")
         ? 409
+        : messaggio.includes("Devi salvare almeno un metodo di pagamento attivo")
+          ? 403
         : 500;
 
     console.error("[PRENOTAZIONE MEZZO ERROR]", error);

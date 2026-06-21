@@ -33,6 +33,28 @@ function formattaImportoCent(cent: number): string {
   }).format(cent / 100);
 }
 
+function descriviPagamento(
+  pagamento: {
+    alias: string | null;
+    circuito: string | null;
+    ultime4: string | null;
+  } | null | undefined,
+): string {
+  if (!pagamento) {
+    return "Non disponibile";
+  }
+
+  if (pagamento.alias?.trim()) {
+    return pagamento.alias;
+  }
+
+  if (pagamento.circuito && pagamento.ultime4) {
+    return `${pagamento.circuito} •••• ${pagamento.ultime4}`;
+  }
+
+  return "Non disponibile";
+}
+
 function formattaDurata(durataMillisecondi: number): string {
   const totaleSecondi = Math.max(Math.floor(durataMillisecondi / 1000), 0);
   const ore = Math.floor(totaleSecondi / 3600);
@@ -143,6 +165,14 @@ export default async function DashboardCronologiaPage() {
                     <span className="font-semibold">Tempo in pausa:</span>{" "}
                     {formattaDurata(ultimaCorsaTerminata.durataPausaMs)}
                   </p>
+                  <p>
+                    <span className="font-semibold">Metodo usato:</span>{" "}
+                    {descriviPagamento(ultimaCorsaTerminata.pagamento)}
+                  </p>
+                  <p>
+                    <span className="font-semibold">Addebito registrato:</span>{" "}
+                    {formattaData(ultimaCorsaTerminata.pagamento.addebitatoAt)}
+                  </p>
                   </div>
 
                   <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
@@ -245,6 +275,25 @@ export default async function DashboardCronologiaPage() {
                             </p>
                             <p className="mt-1 text-sm font-semibold text-slate-950">
                               {formattaData(corsa.iniziataAt)}
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                          <div className="rounded-2xl bg-slate-50 px-3 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                              Metodo usato
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-slate-950">
+                              {descriviPagamento(corsa.pagamento)}
+                            </p>
+                          </div>
+                          <div className="rounded-2xl bg-slate-50 px-3 py-3">
+                            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                              Addebito finale
+                            </p>
+                            <p className="mt-1 text-sm font-semibold text-slate-950">
+                              {formattaData(corsa.pagamento.addebitatoAt)}
                             </p>
                           </div>
                         </div>
