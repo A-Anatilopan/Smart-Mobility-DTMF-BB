@@ -6,7 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verificaSessione } from "@/lib/auth";
-import { mezziMock } from "@/lib/mappa/mock-data";
+import { trovaMezzoPerId } from "@/lib/mezzi";
 import { creaPrenotazioneNoleggio } from "@/lib/noleggio";
 import { normalizzaRuolo, RUOLI } from "@/lib/ruoli";
 
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
 
     // In questa fase il catalogo mezzi vive ancora nel dataset mock di M-02:
     // la route verifica che il mezzo esista e sia adatto a una prenotazione.
-    const mezzo = mezziMock.find((mezzoCorrente) => mezzoCorrente.id === mezzoId);
+    const mezzo = await trovaMezzoPerId(mezzoId);
 
     if (!mezzo) {
       return NextResponse.json(

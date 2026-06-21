@@ -4,8 +4,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verificaSessione } from "@/lib/auth";
-import { mezziMock } from "@/lib/mappa/mock-data";
-import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
+import { recuperaMezziBasePerIds, risolviMezziConStatoDinamico } from "@/lib/mezzi";
 
 function normalizzaMezzoIds(body: unknown): string[] {
   if (!body || typeof body !== "object") {
@@ -54,7 +53,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const mezziRichiesti = mezziMock.filter((mezzo) => mezzoIds.includes(mezzo.id));
+    const mezziRichiesti = await recuperaMezziBasePerIds(mezzoIds);
     const mezziRisolti = await risolviMezziConStatoDinamico(mezziRichiesti);
 
     return NextResponse.json(

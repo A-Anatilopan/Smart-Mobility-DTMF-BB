@@ -412,7 +412,7 @@ export default function SegnalazioniAperteOperatore({
                           </p>
                         </div>
 
-                        <div className="lg:justify-self-end">
+                        <div className="w-full lg:max-w-[360px] lg:justify-self-end">
                           <AzioniSegnalazioneOperatore
                             segnalazioneId={segnalazione.id}
                             stato={segnalazione.stato}

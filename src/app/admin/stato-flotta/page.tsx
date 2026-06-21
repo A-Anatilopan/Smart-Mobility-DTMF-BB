@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import StatoFlottaAmministrazioneClient from "@/components/admin/StatoFlottaAmministrazioneClient";
-import { areeServizioMock, mezziMock } from "@/lib/mappa/mock-data";
+import { areeServizioMock } from "@/lib/mappa/mock-data";
 import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
 
 export const metadata: Metadata = {
@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default async function StatoFlottaPage() {
-  const mezziMonitorati = await risolviMezziConStatoDinamico(mezziMock);
+  const mezziMonitorati = await risolviMezziConStatoDinamico();
 
   return (
     <StatoFlottaAmministrazioneClient

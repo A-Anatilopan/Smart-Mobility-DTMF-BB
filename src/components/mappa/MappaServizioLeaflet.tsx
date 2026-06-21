@@ -594,6 +594,17 @@ export default function MappaServizioLeaflet({
       }),
     [aree, mezziRenderizzati, posizioneUtente, riconsegneRecenti],
   );
+  const chiaveMappa = useMemo(
+    () =>
+      [
+        modalita,
+        aree.map((area) => area.id).join("-"),
+        posizioneUtente
+          ? `${posizioneUtente.latitudine}-${posizioneUtente.longitudine}`
+          : "senza-posizione",
+      ].join("::"),
+    [aree, modalita, posizioneUtente],
+  );
 
   useEffect(() => {
     if (modalita === "utente" || mezzi.length === 0) {
@@ -785,10 +796,14 @@ export default function MappaServizioLeaflet({
 
           <div className="relative">
             <MapContainer
+              key={chiaveMappa}
               center={BARI_CENTRO}
               zoom={14}
               keyboard={false}
               scrollWheelZoom
+              zoomAnimation={false}
+              fadeAnimation={false}
+              markerZoomAnimation={false}
               className="service-map-container h-[520px] w-full [&_.leaflet-control-attribution]:text-[11px] [&_.leaflet-control-attribution]:font-medium [&_.leaflet-control-attribution]:text-slate-700 [&_.leaflet-control-zoom_a]:text-slate-700"
             >
               <AdattaMappaAiContenuti

@@ -373,11 +373,19 @@ export default function ModaleSessioneOperativaMezzo({
             />
           </div>
 
-          <div className="sticky bottom-0 -mx-6 mt-2 flex flex-col gap-3 border-t border-slate-200 bg-white px-6 pb-1 pt-4 sm:flex-row sm:justify-end">
+          <div className="mt-6 flex flex-col-reverse gap-3 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={isPending}
+              className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              Annulla
+            </button>
             <button
               type="submit"
               disabled={isPending}
-              className={`inline-flex items-center justify-center rounded-full px-5 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${
+              className={`inline-flex min-w-[220px] items-center justify-center rounded-full px-5 py-3 text-sm font-semibold text-white transition disabled:cursor-not-allowed disabled:opacity-60 ${
                 sessioneAttiva
                   ? "bg-slate-950 hover:bg-slate-800"
                   : "bg-amber-600 hover:bg-amber-500"
@@ -388,14 +396,6 @@ export default function ModaleSessioneOperativaMezzo({
                 : sessioneAttiva
                   ? "Blocca e chiudi sessione"
                   : "Sblocca per intervento"}
-            </button>
-            <button
-              type="button"
-              onClick={onClose}
-              disabled={isPending}
-              className="inline-flex items-center justify-center rounded-full border border-slate-300 bg-white px-5 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              Annulla
             </button>
           </div>
         </form>

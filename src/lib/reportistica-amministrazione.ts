@@ -1,5 +1,5 @@
-import { areeServizioMock, mezziMock } from "@/lib/mappa/mock-data";
-import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
+import { areeServizioMock } from "@/lib/mappa/mock-data";
+import { recuperaMezziBase, risolviMezziConStatoDinamico } from "@/lib/mezzi";
 import { prisma } from "@/lib/prisma";
 
 type DistribuzioneTipo = {
@@ -62,7 +62,7 @@ function formattaDurataMedia(ms: number): string {
 // Questo helper raccoglie una prima base reale per AP.01 usando dati di corse
 // e prenotazioni dal database, piu lo stato dinamico della flotta mock.
 export async function costruisciReportAggregatoAmministrazione(): Promise<ReportAggregatoAmministrazione> {
-  const [corseCompletate, aggregateCorse, prenotazioniAttive, mezziMonitorati] =
+  const [corseCompletate, aggregateCorse, prenotazioniAttive, mezziMonitorati, mezziCatalogo] =
     await Promise.all([
       prisma.corsa.findMany({
         where: {
@@ -92,14 +92,14 @@ export async function costruisciReportAggregatoAmministrazione(): Promise<Report
           stato: "ATTIVA",
         },
       }),
-      risolviMezziConStatoDinamico(mezziMock),
+      risolviMezziConStatoDinamico(),
+      recuperaMezziBase(),
     ]);
+  const mezziPerId = new Map(mezziCatalogo.map((mezzo) => [mezzo.id, mezzo]));
 
   const corsePerTipo = corseCompletate.reduce<Record<string, number>>(
     (accumulatore, corsa) => {
-      const mezzo = mezziMock.find(
-        (mezzoCorrente) => mezzoCorrente.id === corsa.mezzoId,
-      );
+      const mezzo = mezziPerId.get(corsa.mezzoId);
 
       if (!mezzo) {
         return accumulatore;

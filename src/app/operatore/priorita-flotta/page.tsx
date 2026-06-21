@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import HeroSezioneOperatore from "@/components/operatore/HeroSezioneOperatore";
 import PrioritaFlottaOperativa from "@/components/operatore/PrioritaFlottaOperativa";
-import { mezziMock } from "@/lib/mappa/mock-data";
 import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
 import { recuperaRiepiloghiSegnalazioniApertePerMezzo } from "@/lib/segnalazioni-mezzo";
 
@@ -12,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function OperatorePrioritaFlottaPage() {
-  const mezziMonitorati = await risolviMezziConStatoDinamico(mezziMock);
+  const mezziMonitorati = await risolviMezziConStatoDinamico();
   const riepiloghiSegnalazioni = await recuperaRiepiloghiSegnalazioniApertePerMezzo(
     mezziMonitorati.map((mezzo) => mezzo.id),
   );
@@ -22,8 +21,11 @@ export default async function OperatorePrioritaFlottaPage() {
   const mezziConBatteriaBassa = mezziMonitorati.filter(
     (mezzo) => mezzo.batteria <= 25,
   );
-  const mezziNonDisponibili = mezziMonitorati.filter((mezzo) =>
-    ["NON_DISPONIBILE", "IN_MANUTENZIONE"].includes(mezzo.stato),
+  const mezziFuoriDisponibilita = mezziMonitorati.filter(
+    (mezzo) => mezzo.stato === "NON_DISPONIBILE",
+  );
+  const mezziInManutenzione = mezziMonitorati.filter(
+    (mezzo) => mezzo.stato === "IN_MANUTENZIONE",
   );
   const mezziConSegnalazioniAperte = mezziMonitorati
     .filter((mezzo) => riepiloghiPerMezzo.has(mezzo.id))
@@ -53,13 +55,14 @@ export default async function OperatorePrioritaFlottaPage() {
     <>
       <HeroSezioneOperatore
         soprattitolo="Priorita flotta"
-        titolo="Qui emergono subito i mezzi da presidiare."
-        descrizione="Batteria bassa e indisponibilita vivono in una sezione dedicata, cosi l'operatore puo concentrarsi subito sui casi piu urgenti."
+        titolo="Qui emergono subito i mezzi da seguire sul piano manutentivo."
+        descrizione="Questa vista separa i mezzi sotto osservazione da quelli gia fuori disponibilita o gia entrati in manutenzione, cosi il presidio operativo resta piu chiaro."
       />
 
       <PrioritaFlottaOperativa
         mezziConBatteriaBassa={mezziConBatteriaBassa}
-        mezziNonDisponibili={mezziNonDisponibili}
+        mezziFuoriDisponibilita={mezziFuoriDisponibilita}
+        mezziInManutenzione={mezziInManutenzione}
         mezziConSegnalazioniAperte={mezziConSegnalazioniAperte}
       />
     </>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import MonitoraggioNoleggioUtente from "@/components/operatore/MonitoraggioNoleggioUtente";
-import { mezziMock } from "@/lib/mappa/mock-data";
+import { recuperaMezziBase } from "@/lib/mezzi";
 import { trovaRiepilogoMonitoraggioOperatore } from "@/lib/noleggio";
 import { RUOLI } from "@/lib/ruoli";
 import { richiediRuolo } from "@/lib/session";
@@ -13,12 +13,14 @@ export const metadata: Metadata = {
 
 export default async function OperatoreMonitoraggioPage() {
   const utente = await richiediRuolo(RUOLI.OPERATORE);
-  const monitoraggiAttivi = await trovaRiepilogoMonitoraggioOperatore(12);
+  const [monitoraggiAttivi, mezziCatalogo] = await Promise.all([
+    trovaRiepilogoMonitoraggioOperatore(12),
+    recuperaMezziBase(),
+  ]);
+  const mezziPerId = new Map(mezziCatalogo.map((mezzo) => [mezzo.id, mezzo]));
   const monitoraggiAttiviConMezzo = monitoraggiAttivi.map((voce) => {
     const mezzoId = voce.corsa?.mezzoId ?? voce.prenotazione?.mezzoId ?? null;
-    const mezzo = mezzoId
-      ? mezziMock.find((mezzoCorrente) => mezzoCorrente.id === mezzoId) ?? null
-      : null;
+    const mezzo = mezzoId ? mezziPerId.get(mezzoId) ?? null : null;
 
     return {
       ...voce,

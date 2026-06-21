@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verificaSessione } from "@/lib/auth";
-import { mezziMock } from "@/lib/mappa/mock-data";
+import { recuperaMezziBase } from "@/lib/mezzi";
 import { monitoraNoleggioUtente } from "@/lib/noleggio";
 import { prisma } from "@/lib/prisma";
 import { normalizzaRuolo, RUOLI } from "@/lib/ruoli";
@@ -98,7 +98,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const monitoraggio = await monitoraNoleggioUtente(utente.id);
+    const [monitoraggio, mezziCatalogo] = await Promise.all([
+      monitoraNoleggioUtente(utente.id),
+      recuperaMezziBase(),
+    ]);
 
     if (!monitoraggio) {
       return NextResponse.json(
@@ -106,18 +109,14 @@ export async function POST(request: NextRequest) {
         { status: 404 },
       );
     }
+    const mezziPerId = new Map(mezziCatalogo.map((mezzo) => [mezzo.id, mezzo]));
 
     const mezzoPrenotato = monitoraggio.prenotazione
-      ? mezziMock.find(
-          (mezzoCorrente) =>
-            mezzoCorrente.id === monitoraggio.prenotazione?.mezzoId,
-        )
+      ? mezziPerId.get(monitoraggio.prenotazione.mezzoId) ?? null
       : null;
 
     const mezzoInCorsa = monitoraggio.corsa
-      ? mezziMock.find(
-          (mezzoCorrente) => mezzoCorrente.id === monitoraggio.corsa?.mezzoId,
-        )
+      ? mezziPerId.get(monitoraggio.corsa.mezzoId) ?? null
       : null;
 
     return NextResponse.json(

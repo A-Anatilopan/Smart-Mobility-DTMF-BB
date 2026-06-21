@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verificaSessione } from "@/lib/auth";
-import { mezziMock } from "@/lib/mappa/mock-data";
+import { recuperaMezziBase } from "@/lib/mezzi";
 import { trovaRiepilogoMonitoraggioOperatore } from "@/lib/noleggio";
 import { normalizzaRuolo, RUOLI } from "@/lib/ruoli";
 
@@ -36,13 +36,15 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const elenco = await trovaRiepilogoMonitoraggioOperatore(12);
+    const [elenco, mezziCatalogo] = await Promise.all([
+      trovaRiepilogoMonitoraggioOperatore(12),
+      recuperaMezziBase(),
+    ]);
+    const mezziPerId = new Map(mezziCatalogo.map((mezzo) => [mezzo.id, mezzo]));
 
     const monitoraggi = elenco.map((voce) => {
       const mezzoId = voce.corsa?.mezzoId ?? voce.prenotazione?.mezzoId ?? null;
-      const mezzo = mezzoId
-        ? mezziMock.find((mezzoCorrente) => mezzoCorrente.id === mezzoId) ?? null
-        : null;
+      const mezzo = mezzoId ? mezziPerId.get(mezzoId) ?? null : null;
 
       return {
         ...voce,

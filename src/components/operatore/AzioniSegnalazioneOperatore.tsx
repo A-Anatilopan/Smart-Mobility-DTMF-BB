@@ -211,31 +211,38 @@ export default function AzioniSegnalazioneOperatore({
   if (stato === "RITIRO_PROGRAMMATO") {
     return (
       <div className="w-full rounded-[1.45rem] border border-emerald-100 bg-[linear-gradient(180deg,_rgba(236,253,245,0.8)_0%,_rgba(255,255,255,0.96)_100%)] p-4 shadow-[0_16px_34px_-28px_rgba(16,185,129,0.35)]">
-        <div className="space-y-2">
+        <div className="space-y-4">
           <span className="inline-flex items-center rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800">
             Ritiro programmato
           </span>
-          <p className="text-sm leading-6 text-slate-600">
-            Il mezzo e fuori disponibilita e sta aspettando l&apos;inizio della
-            manutenzione tecnica.
-          </p>
-          {operatorePresaInCaricoNome ? (
-            <p className="text-sm font-medium text-emerald-800">
-              Caso in carico a {operatorePresaInCaricoNome}.
-            </p>
-          ) : null}
-        </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            void aggiornaWorkflow("AVVIA_MANUTENZIONE");
-          }}
-          disabled={isPending}
-          className="mt-4 inline-flex w-full items-center justify-center rounded-full bg-amber-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-amber-500 disabled:cursor-wait disabled:bg-amber-300"
-        >
-          {isPending ? "Aggiorno..." : "Avvia manutenzione"}
-        </button>
+          <div className="space-y-2">
+            <p className="text-sm leading-6 text-slate-600">
+              Il mezzo e fuori disponibilita e sta aspettando l&apos;inizio
+              della manutenzione tecnica.
+            </p>
+            {operatorePresaInCaricoNome ? (
+              <p className="text-sm font-medium text-emerald-800">
+                Caso in carico a {operatorePresaInCaricoNome}.
+              </p>
+            ) : null}
+          </div>
+
+          {/* Il pulsante resta in un blocco dedicato per evitare che Safari/Turbopack
+              lo nascondano quando il pannello azioni viene riaperto dopo un refresh. */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => {
+                void aggiornaWorkflow("AVVIA_MANUTENZIONE");
+              }}
+              disabled={isPending}
+              className="inline-flex min-h-12 w-full items-center justify-center rounded-full bg-amber-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-amber-500 disabled:cursor-wait disabled:bg-amber-300"
+            >
+              {isPending ? "Aggiorno..." : "Avvia manutenzione"}
+            </button>
+          </div>
+        </div>
 
         {errore ? (
           <p className="mt-3 text-sm font-medium text-rose-700">{errore}</p>

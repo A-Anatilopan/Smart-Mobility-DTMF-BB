@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verificaSessione } from "@/lib/auth";
-import { mezziMock } from "@/lib/mappa/mock-data";
 import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
 import { normalizzaRuolo, RUOLI } from "@/lib/ruoli";
 
@@ -36,7 +35,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const mezzi = await risolviMezziConStatoDinamico(mezziMock);
+    const mezzi = await risolviMezziConStatoDinamico();
 
     return NextResponse.json({ mezzi }, { status: 200 });
   } catch (error) {

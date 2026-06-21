@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import DashboardAmministrazioneClient from "@/components/admin/DashboardAmministrazioneClient";
-import { areeServizioMock, mezziMock } from "@/lib/mappa/mock-data";
+import { areeServizioMock } from "@/lib/mappa/mock-data";
 import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
 
 // Metadati della vista iniziale della Pubblica Amministrazione.
@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 };
 
 export default async function DashboardPubblicaAmministrazionePage() {
-  const mezziMonitorati = await risolviMezziConStatoDinamico(mezziMock);
+  const mezziMonitorati = await risolviMezziConStatoDinamico();
 
   return <DashboardAmministrazioneClient aree={areeServizioMock} mezziIniziali={mezziMonitorati} />;
 }

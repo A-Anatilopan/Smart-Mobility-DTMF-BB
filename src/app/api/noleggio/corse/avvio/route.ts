@@ -7,7 +7,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verificaSessione } from "@/lib/auth";
 import { calcolaDistanzaMetri } from "@/lib/geolocalizzazione";
-import { mezziMock, posizioneUtenteMappaMock } from "@/lib/mappa/mock-data";
+import { posizioneUtenteMappaMock } from "@/lib/mappa/mock-data";
+import { trovaMezzoPerId } from "@/lib/mezzi";
 import {
   avviaCorsaDaPrenotazione,
   avviaCorsaDiretta,
@@ -103,10 +104,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const mezzo = mezziMock.find((mezzoCorrente) =>
-      prenotazioneValida
-        ? mezzoCorrente.id === prenotazioneValida.mezzoId
-        : mezzoCorrente.id === mezzoId,
+    const mezzo = await trovaMezzoPerId(
+      prenotazioneValida ? prenotazioneValida.mezzoId : mezzoId,
     );
 
     if (!mezzo) {

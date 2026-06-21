@@ -3,7 +3,6 @@ import MappaOperatoreSegnalazioniClient from "@/components/operatore/MappaOperat
 import RiepilogoSessioniOperativeAttive from "@/components/operatore/RiepilogoSessioniOperativeAttive";
 import {
   areeServizioMock,
-  mezziMock,
   posizioneOperatoreMappaMock,
 } from "@/lib/mappa/mock-data";
 import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
@@ -21,7 +20,7 @@ export const metadata: Metadata = {
 export default async function DashboardOperatorePage() {
   const [operatore, mezziMonitorati, sessioniOperativeAttiveDb] = await Promise.all([
     richiediRuolo(RUOLI.OPERATORE),
-    risolviMezziConStatoDinamico(mezziMock),
+    risolviMezziConStatoDinamico(),
     prisma.sessioneOperativaMezzo.findMany({
       where: {
         stato: "ATTIVA",

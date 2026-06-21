@@ -4,6 +4,11 @@
 import { randomUUID } from "crypto";
 import type { Corsa, Prenotazione, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
+import {
+  aggiornaStatoMezzoPersistito,
+  sincronizzaStatoMezziPersistiti,
+  sincronizzaStatoMezzoPersistito,
+} from "@/lib/mezzi";
 import type {
   CorsaNoleggio,
   MonitoraggioNoleggioUtente,
@@ -147,12 +152,27 @@ export async function sincronizzaPrenotazioniScadute(filtro?: {
     };
   }
 
+  const prenotazioniScadute = await prisma.prenotazione.findMany({
+    where,
+    select: {
+      mezzoId: true,
+    },
+  });
+
+  if (prenotazioniScadute.length === 0) {
+    return;
+  }
+
   await prisma.prenotazione.updateMany({
     where,
     data: {
       stato: "SCADUTA",
     },
   });
+
+  await sincronizzaStatoMezziPersistiti(
+    prenotazioniScadute.map((prenotazione) => prenotazione.mezzoId),
+  );
 }
 
 // Verifica se l'utente ha gia una prenotazione attiva, per evitare
@@ -491,6 +511,11 @@ export async function creaPrenotazioneNoleggio(input: {
     },
   });
 
+  await aggiornaStatoMezzoPersistito({
+    mezzoId: input.mezzoId,
+    stato: "PRENOTATO",
+  });
+
   return mappaPrenotazioneDominio(prenotazione);
 }
 
@@ -539,6 +564,8 @@ export async function annullaPrenotazioneNoleggio(input: {
     },
   });
 
+  await sincronizzaStatoMezzoPersistito(prenotazione.mezzoId);
+
   return mappaPrenotazioneDominio(prenotazioneAggiornata);
 }
 
@@ -578,6 +605,8 @@ export async function scadePrenotazioneNoleggio(input: {
       stato: "SCADUTA",
     },
   });
+
+  await sincronizzaStatoMezzoPersistito(prenotazione.mezzoId);
 
   return mappaPrenotazioneDominio(prenotazioneAggiornata);
 }
@@ -642,6 +671,17 @@ export async function avviaCorsaDaPrenotazione(input: {
         ultimaRipresaAt: new Date(),
         latitudineInizio: input.posizioneInizio?.latitudine,
         longitudineInizio: input.posizioneInizio?.longitudine,
+      },
+    });
+
+    await tx.mezzo.update({
+      where: {
+        id: prenotazione.mezzoId,
+      },
+      data: {
+        stato: "IN_USO",
+        latitudine: input.posizioneInizio?.latitudine,
+        longitudine: input.posizioneInizio?.longitudine,
       },
     });
 
@@ -746,6 +786,17 @@ export async function avviaCorsaDiretta(input: {
       },
     });
 
+    await tx.mezzo.update({
+      where: {
+        id: input.mezzoId,
+      },
+      data: {
+        stato: "IN_USO",
+        latitudine: input.posizioneInizio?.latitudine,
+        longitudine: input.posizioneInizio?.longitudine,
+      },
+    });
+
     return mappaCorsaDominio(corsa);
   });
 }
@@ -790,6 +841,11 @@ export async function mettiCorsaInPausa(input: {
     },
   });
 
+  await aggiornaStatoMezzoPersistito({
+    mezzoId: corsa.mezzoId,
+    stato: "IN_PAUSA",
+  });
+
   return mappaCorsaDominio(corsaAggiornata);
 }
 
@@ -832,6 +888,11 @@ export async function riprendiCorsaInPausa(input: {
       ultimaRipresaAt: ripresaAt,
       durataPausaMs: durataPausaAggiornata,
     },
+  });
+
+  await aggiornaStatoMezzoPersistito({
+    mezzoId: corsa.mezzoId,
+    stato: "IN_USO",
   });
 
   return mappaCorsaDominio(corsaAggiornata);
@@ -880,6 +941,14 @@ async function chiudiCorsaPersistente(input: {
       notaTerminazioneOperatore: input.notaTerminazioneOperatore ?? null,
     },
   });
+
+  await aggiornaStatoMezzoPersistito({
+    mezzoId: input.corsa.mezzoId,
+    stato: "DISPONIBILE",
+    latitudine: input.posizioneFine?.latitudine,
+    longitudine: input.posizioneFine?.longitudine,
+  });
+  await sincronizzaStatoMezzoPersistito(input.corsa.mezzoId);
 
   return mappaCorsaDominio(corsaAggiornata);
 }

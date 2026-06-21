@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verificaSessione } from "@/lib/auth";
-import { mezziMock } from "@/lib/mappa/mock-data";
+import { trovaMezzoPerId } from "@/lib/mezzi";
 import { terminaCorsaDaOperatore } from "@/lib/noleggio";
 import { prisma } from "@/lib/prisma";
 import { normalizzaRuolo, RUOLI } from "@/lib/ruoli";
@@ -82,9 +82,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       );
     }
 
-    const mezzo = mezziMock.find(
-      (mezzoCorrente) => mezzoCorrente.id === corsaEsistente.mezzoId,
-    );
+    const mezzo = await trovaMezzoPerId(corsaEsistente.mezzoId);
 
     const corsa = await terminaCorsaDaOperatore({
       corsaId,

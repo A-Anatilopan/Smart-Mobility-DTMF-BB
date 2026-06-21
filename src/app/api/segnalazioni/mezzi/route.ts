@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { verificaSessione } from "@/lib/auth";
-import { mezziMock } from "@/lib/mappa/mock-data";
+import { trovaMezzoPerId } from "@/lib/mezzi";
 import { creaSegnalazioneMezzoUtente, normalizzaInputSegnalazioneMezzoUtente } from "@/lib/segnalazioni-mezzo";
 import { normalizzaRuolo, RUOLI } from "@/lib/ruoli";
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const mezzo = mezziMock.find((mezzoCorrente) => mezzoCorrente.id === input.mezzoId);
+    const mezzo = await trovaMezzoPerId(input.mezzoId);
 
     if (!mezzo) {
       return NextResponse.json(

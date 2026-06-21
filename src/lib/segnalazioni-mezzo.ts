@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import type { SegnalazioneMezzo, Utente } from "@prisma/client";
+import { aggiornaStatoMezzoPersistito, sincronizzaStatoMezzoPersistito } from "@/lib/mezzi";
 import { prisma } from "@/lib/prisma";
 import {
   CATEGORIE_SEGNALAZIONE_MEZZO,
@@ -15,6 +16,7 @@ import {
   type SegnalazioneMezzoDominio,
   type StatoSegnalazioneMezzo,
 } from "@/types/segnalazioni";
+import type { StatoMezzo } from "@/types/mobilita";
 
 const LUNGHEZZA_MINIMA_DESCRIZIONE = 5;
 const LUNGHEZZA_MINIMA_DESCRIZIONE_ALTRO = 10;
@@ -117,6 +119,20 @@ function formattaOperatoreAssegnato(
   }
 
   return `${operatore.nome} ${operatore.cognome}`.trim();
+}
+
+function risolviStatoMezzoDaAzioneWorkflow(
+  azione: AzioneWorkflowSegnalazioneMezzoOperatore,
+): StatoMezzo {
+  if (azione === "AVVIA_MANUTENZIONE") {
+    return "IN_MANUTENZIONE";
+  }
+
+  if (azione === "RIMETTI_IN_SERVIZIO") {
+    return "DISPONIBILE";
+  }
+
+  return "NON_DISPONIBILE";
 }
 
 // I codici leggibili aiutano tracciabilita, debug e distinzione tra
@@ -721,6 +737,12 @@ export async function aggiornaWorkflowSegnalazioneMezzoOperatore(input: {
     },
     include: selectOperatorePresaInCarico(),
   });
+
+  await aggiornaStatoMezzoPersistito({
+    mezzoId: segnalazione.mezzoId,
+    stato: risolviStatoMezzoDaAzioneWorkflow(input.azione),
+  });
+  await sincronizzaStatoMezzoPersistito(segnalazione.mezzoId);
 
   return {
     segnalazione: mappaSegnalazioneMezzoDominio(aggiornata),

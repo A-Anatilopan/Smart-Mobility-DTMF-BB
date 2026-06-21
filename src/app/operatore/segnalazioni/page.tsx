@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import HeroSezioneOperatore from "@/components/operatore/HeroSezioneOperatore";
 import SegnalazioniAperteOperatore from "@/components/operatore/SegnalazioniAperteOperatore";
-import { mezziMock } from "@/lib/mappa/mock-data";
 import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
 import {
   recuperaRiepiloghiSegnalazioniApertePerMezzo,
@@ -21,7 +20,7 @@ export const metadata: Metadata = {
 // separando la gestione dal riepilogo rapido mostrato in Priorita flotta.
 export default async function OperatoreSegnalazioniPage() {
   const operatoreCorrente = await richiediRuolo(RUOLI.OPERATORE);
-  const mezziMonitorati = await risolviMezziConStatoDinamico(mezziMock);
+  const mezziMonitorati = await risolviMezziConStatoDinamico();
   const mezzoIds = mezziMonitorati.map((mezzo) => mezzo.id);
   const [
     riepiloghiSegnalazioni,

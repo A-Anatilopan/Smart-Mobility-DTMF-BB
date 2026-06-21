@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import MappaServizioMock from "@/components/mappa/MappaServizioMock";
 import {
   areeServizioMock,
-  mezziMock,
   posizioneUtenteMappaMock,
 } from "@/lib/mappa/mock-data";
+import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
 
 // Metadati pubblici della prima schermata del modulo M-02.
 export const metadata: Metadata = {
@@ -13,9 +13,10 @@ export const metadata: Metadata = {
     "Consulta i mezzi disponibili e le aree di servizio del sistema E-Smart Mobility.",
 };
 
-export default function MezziPage() {
+export default async function MezziPage() {
+  const mezziMonitorati = await risolviMezziConStatoDinamico();
   // La vista utente mostra solo i mezzi effettivamente disponibili al noleggio.
-  const mezziDisponibili = mezziMock.filter(
+  const mezziDisponibili = mezziMonitorati.filter(
     (mezzo) => mezzo.stato === "DISPONIBILE",
   );
   const conteggioPerTipo = {

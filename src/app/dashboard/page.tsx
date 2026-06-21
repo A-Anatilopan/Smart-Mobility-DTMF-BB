@@ -2,14 +2,12 @@ import type { Metadata } from "next";
 import DashboardUtenteNoleggioClient from "@/components/noleggio/DashboardUtenteNoleggioClient";
 import {
   areeServizioMock,
-  mezziMock,
   posizioneUtenteMappaMock,
 } from "@/lib/mappa/mock-data";
+import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
 import {
-  trovaCorsaAttivaMezzo,
   trovaCorsaAttivaUtente,
   trovaUltimaCorsaTerminataUtente,
-  trovaPrenotazioneAttivaMezzo,
   trovaPrenotazioneAttivaUtente,
 } from "@/lib/noleggio";
 import { RUOLI } from "@/lib/ruoli";
@@ -24,38 +22,25 @@ export const metadata: Metadata = {
 
 export default async function DashboardUtentePage() {
   const utente = await richiediRuolo(RUOLI.UTENTE);
-  const [prenotazioneAttiva, corsaAttiva, ultimaCorsaTerminata] = await Promise.all([
-    trovaPrenotazioneAttivaUtente(utente.id),
-    trovaCorsaAttivaUtente(utente.id),
-    trovaUltimaCorsaTerminataUtente(utente.id),
-  ]);
-  const mezziDisponibiliMock = mezziMock.filter(
+  const [prenotazioneAttiva, corsaAttiva, ultimaCorsaTerminata, mezziMonitorati] =
+    await Promise.all([
+      trovaPrenotazioneAttivaUtente(utente.id),
+      trovaCorsaAttivaUtente(utente.id),
+      trovaUltimaCorsaTerminataUtente(utente.id),
+      risolviMezziConStatoDinamico(),
+    ]);
+  const mezziPerId = new Map(mezziMonitorati.map((mezzo) => [mezzo.id, mezzo]));
+  const mezziDisponibili = mezziMonitorati.filter(
     (mezzo) => mezzo.stato === "DISPONIBILE",
   );
-  const verificheDisponibilita = await Promise.all(
-    mezziDisponibiliMock.map(async (mezzo) => {
-      const [prenotazioneAttivaMezzo, corsaAttivaMezzo] = await Promise.all([
-        trovaPrenotazioneAttivaMezzo(mezzo.id),
-        trovaCorsaAttivaMezzo(mezzo.id),
-      ]);
-
-      return {
-        mezzo,
-        impegnato: Boolean(prenotazioneAttivaMezzo || corsaAttivaMezzo),
-      };
-    }),
-  );
-  const mezziDisponibili = verificheDisponibilita
-    .filter((verifica) => !verifica.impegnato)
-    .map((verifica) => verifica.mezzo);
   const mezzoPrenotato = prenotazioneAttiva
-    ? mezziMock.find((mezzo) => mezzo.id === prenotazioneAttiva.mezzoId) ?? null
+    ? mezziPerId.get(prenotazioneAttiva.mezzoId) ?? null
     : null;
   const mezzoInCorsa = corsaAttiva
-    ? mezziMock.find((mezzo) => mezzo.id === corsaAttiva.mezzoId) ?? null
+    ? mezziPerId.get(corsaAttiva.mezzoId) ?? null
     : null;
   const mezzoUltimaCorsaTerminata = ultimaCorsaTerminata
-    ? mezziMock.find((mezzo) => mezzo.id === ultimaCorsaTerminata.mezzoId) ?? null
+    ? mezziPerId.get(ultimaCorsaTerminata.mezzoId) ?? null
     : null;
   const mezziMappaUtente = [
     ...mezziDisponibili,

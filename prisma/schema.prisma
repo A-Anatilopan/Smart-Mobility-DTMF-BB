@@ -64,6 +64,37 @@ model Sessione {
 }
 
 // ================================
+// M-02 / M-03 / M-05 - CATALOGO MEZZI
+// Il mezzo diventa una vera entita persistita, mantenendo esattamente i nomi
+// e i tipi gia usati nel progetto per non rompere la UI, i mock storici e la
+// documentazione gia consolidata.
+// ================================
+
+model Mezzo {
+  id               String   @id @db.VarChar(50)
+  codice           String   @unique @db.VarChar(50)
+  tipo             String   @db.VarChar(20)
+  modello          String   @db.VarChar(100)
+  stato            String   @db.VarChar(30)
+  batteria         Int
+  latitudine       Decimal  @db.Decimal(10, 7)
+  longitudine      Decimal  @db.Decimal(10, 7)
+  posti            Int
+  patenteRichiesta String   @db.VarChar(20)
+  areaServizioId   String   @db.VarChar(50)
+  areaServizioNome String   @db.VarChar(100)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  prenotazioni     Prenotazione[]
+  corse            Corsa[]
+  segnalazioni     SegnalazioneMezzo[]
+  sessioniOperative SessioneOperativaMezzo[]
+
+  @@map("mezzi")
+}
+
+// ================================
 // M-03 - PRENOTAZIONE E CORSA
 // Copre la base strutturale per: UC-01, UC-02, UC-03, UC-05, UC-25
 // User Stories future: UT.04, UT.05, UT.06, UT.07, UT.08, OP.05
@@ -85,6 +116,7 @@ model Prenotazione {
   updatedAt          DateTime  @updatedAt
 
   utente Utente @relation(fields: [utenteId], references: [id], onDelete: Cascade)
+  mezzo  Mezzo  @relation(fields: [mezzoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   corsa  Corsa?
 
   @@index([utenteId, stato])
@@ -132,6 +164,7 @@ model Corsa {
   updatedAt          DateTime  @updatedAt
 
   utente       Utente        @relation(fields: [utenteId], references: [id], onDelete: Cascade)
+  mezzo        Mezzo         @relation(fields: [mezzoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   prenotazione Prenotazione? @relation(fields: [prenotazioneId], references: [id], onDelete: SetNull)
   terminataDaOperatore Utente? @relation("OperatoreTermineCorsa", fields: [terminataDaOperatoreId], references: [id], onDelete: SetNull)
 
@@ -168,6 +201,7 @@ model SegnalazioneMezzo {
   updatedAt        DateTime @updatedAt
 
   utente Utente @relation("UtenteSegnalanteMezzo", fields: [utenteId], references: [id], onDelete: Cascade)
+  mezzo  Mezzo  @relation(fields: [mezzoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   operatorePresaInCarico Utente? @relation("OperatorePresaInCaricoSegnalazioneMezzo", fields: [operatorePresaInCaricoId], references: [id], onDelete: SetNull)
 
   @@index([utenteId])
@@ -204,6 +238,7 @@ model SessioneOperativaMezzo {
   updatedAt         DateTime @updatedAt
 
   operatore Utente @relation("OperatoreSessioneOperativaMezzo", fields: [operatoreId], references: [id], onDelete: Cascade)
+  mezzo     Mezzo  @relation(fields: [mezzoId], references: [id], onDelete: Restrict, onUpdate: Cascade)
 
   @@index([operatoreId])
   @@index([mezzoId])

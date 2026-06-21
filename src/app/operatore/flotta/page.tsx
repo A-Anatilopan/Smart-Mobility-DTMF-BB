@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import FlottaOperatoreClient from "@/components/operatore/FlottaOperatoreClient";
 import HeroSezioneOperatore from "@/components/operatore/HeroSezioneOperatore";
 import RiepilogoSessioniOperativeAttive from "@/components/operatore/RiepilogoSessioniOperativeAttive";
-import { mezziMock } from "@/lib/mappa/mock-data";
 import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
 import { prisma } from "@/lib/prisma";
 import { richiediRuolo } from "@/lib/session";
@@ -51,7 +50,7 @@ export default async function OperatoreFlottaPage({
 }: OperatoreFlottaPageProps) {
   const [operatore, mezziMonitorati, sessioniOperativeAttiveDb] = await Promise.all([
     richiediRuolo(RUOLI.OPERATORE),
-    risolviMezziConStatoDinamico(mezziMock),
+    risolviMezziConStatoDinamico(),
     prisma.sessioneOperativaMezzo.findMany({
       where: {
         stato: "ATTIVA",

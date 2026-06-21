@@ -3,7 +3,7 @@ import Link from "next/link";
 import {
   trovaStoricoCorseTerminateUtente,
 } from "@/lib/noleggio";
-import { mezziMock } from "@/lib/mappa/mock-data";
+import { recuperaMezziBase } from "@/lib/mezzi";
 import { RUOLI } from "@/lib/ruoli";
 import { richiediRuolo } from "@/lib/session";
 
@@ -48,14 +48,18 @@ function formattaDurata(durataMillisecondi: number): string {
 
 export default async function DashboardCronologiaPage() {
   const utente = await richiediRuolo(RUOLI.UTENTE);
-  const storicoCorse = await trovaStoricoCorseTerminateUtente(utente.id);
+  const [storicoCorse, mezziCatalogo] = await Promise.all([
+    trovaStoricoCorseTerminateUtente(utente.id),
+    recuperaMezziBase(),
+  ]);
+  const mezziPerId = new Map(mezziCatalogo.map((mezzo) => [mezzo.id, mezzo]));
   const ultimaCorsaTerminata = storicoCorse[0] ?? null;
   const mezzoUltimaCorsa = ultimaCorsaTerminata
-    ? mezziMock.find((mezzo) => mezzo.id === ultimaCorsaTerminata.mezzoId) ?? null
+    ? mezziPerId.get(ultimaCorsaTerminata.mezzoId) ?? null
     : null;
   const storicoConMezzo = storicoCorse.map((corsa) => ({
     corsa,
-    mezzo: mezziMock.find((mezzo) => mezzo.id === corsa.mezzoId) ?? null,
+    mezzo: mezziPerId.get(corsa.mezzoId) ?? null,
   }));
 
   return (

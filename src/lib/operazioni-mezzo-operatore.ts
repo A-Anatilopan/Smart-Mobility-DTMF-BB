@@ -1,7 +1,11 @@
 import { randomUUID } from "crypto";
-import { mezziMock, posizioneOperatoreMappaMock } from "@/lib/mappa/mock-data";
+import { posizioneOperatoreMappaMock } from "@/lib/mappa/mock-data";
 import { prisma } from "@/lib/prisma";
-import { risolviMezziConStatoDinamico } from "@/lib/mezzi";
+import {
+  aggiornaStatoMezzoPersistito,
+  risolviMezziConStatoDinamico,
+  sincronizzaStatoMezzoPersistito,
+} from "@/lib/mezzi";
 import {
   DISTANZA_MASSIMA_SBLOCCO_LOCALE_OPERATORE_METRI,
   MESSAGGIO_MEZZO_TROPPO_LONTANO_PER_SBLOCCO,
@@ -75,7 +79,7 @@ export async function apriSessioneOperativaLocaleOperatore(
   }
 
   const mezzoDinamico = (
-    await risolviMezziConStatoDinamico(mezziMock)
+    await risolviMezziConStatoDinamico()
   ).find((mezzo) => mezzo.id === mezzoId);
 
   if (!mezzoDinamico) {
@@ -152,6 +156,11 @@ export async function apriSessioneOperativaLocaleOperatore(
         },
       },
     },
+  });
+
+  await aggiornaStatoMezzoPersistito({
+    mezzoId: mezzoDinamico.id,
+    stato: "NON_DISPONIBILE",
   });
 
   return {
@@ -251,9 +260,14 @@ export async function chiudiSessioneOperativaLocaleOperatore(
     },
   });
 
-  const mezzoRisolto = (
-    await risolviMezziConStatoDinamico(mezziMock)
-  ).find((mezzo) => mezzo.id === mezzoId);
+  await aggiornaStatoMezzoPersistito({
+    mezzoId,
+    stato: sessioneAttiva.statoMezzoOrigine as StatoMezzo,
+  });
+
+  const mezzoRisolto =
+    (await sincronizzaStatoMezzoPersistito(mezzoId)) ??
+    (await risolviMezziConStatoDinamico()).find((mezzo) => mezzo.id === mezzoId);
 
   return {
     sessione: sessioneChiusa,
