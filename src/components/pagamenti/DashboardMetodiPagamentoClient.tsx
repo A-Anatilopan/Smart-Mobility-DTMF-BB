@@ -86,7 +86,11 @@ export default function DashboardMetodiPagamentoClient({
 }: Props) {
   const [metodi, setMetodi] = useState<MetodoPagamentoView[]>(metodiIniziali);
   const [form, setForm] = useState<FormState>(creaFormVuoto);
-  const [feedback, setFeedback] = useState<MessaggioFeedback | null>(null);
+  const [feedbackForm, setFeedbackForm] = useState<MessaggioFeedback | null>(
+    null,
+  );
+  const [feedbackMetodi, setFeedbackMetodi] =
+    useState<MessaggioFeedback | null>(null);
   const [isPending, startTransition] = useTransition();
 
   const metodoPredefinito =
@@ -95,18 +99,32 @@ export default function DashboardMetodiPagamentoClient({
   const puoNoleggiare = metodi.length > 0;
 
   useEffect(() => {
-    if (!feedback) {
+    if (!feedbackForm) {
       return;
     }
 
     const timeoutId = window.setTimeout(() => {
-      setFeedback(null);
+      setFeedbackForm(null);
     }, 10_000);
 
     return () => {
       window.clearTimeout(timeoutId);
     };
-  }, [feedback]);
+  }, [feedbackForm]);
+
+  useEffect(() => {
+    if (!feedbackMetodi) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setFeedbackMetodi(null);
+    }, 10_000);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [feedbackMetodi]);
 
   function aggiornaCampo<K extends keyof FormState>(
     chiave: K,
@@ -135,7 +153,7 @@ export default function DashboardMetodiPagamentoClient({
 
   function onSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setFeedback(null);
+    setFeedbackForm(null);
 
     startTransition(async () => {
       try {
@@ -154,12 +172,12 @@ export default function DashboardMetodiPagamentoClient({
 
         await ricaricaMetodi();
         setForm(creaFormVuoto());
-        setFeedback({
+        setFeedbackForm({
           tipo: "successo",
           testo: "Metodo di pagamento salvato correttamente.",
         });
       } catch (error) {
-        setFeedback({
+        setFeedbackForm({
           tipo: "errore",
           testo:
             error instanceof Error
@@ -171,7 +189,7 @@ export default function DashboardMetodiPagamentoClient({
   }
 
   function impostaPredefinito(metodoId: number) {
-    setFeedback(null);
+    setFeedbackMetodi(null);
 
     startTransition(async () => {
       try {
@@ -188,12 +206,12 @@ export default function DashboardMetodiPagamentoClient({
         }
 
         await ricaricaMetodi();
-        setFeedback({
+        setFeedbackMetodi({
           tipo: "successo",
           testo: "Metodo predefinito aggiornato con successo.",
         });
       } catch (error) {
-        setFeedback({
+        setFeedbackMetodi({
           tipo: "errore",
           testo:
             error instanceof Error
@@ -213,7 +231,7 @@ export default function DashboardMetodiPagamentoClient({
       return;
     }
 
-    setFeedback(null);
+    setFeedbackMetodi(null);
 
     startTransition(async () => {
       try {
@@ -227,12 +245,12 @@ export default function DashboardMetodiPagamentoClient({
         }
 
         await ricaricaMetodi();
-        setFeedback({
+        setFeedbackMetodi({
           tipo: "successo",
           testo: "Metodo di pagamento eliminato dal tuo account.",
         });
       } catch (error) {
-        setFeedback({
+        setFeedbackMetodi({
           tipo: "errore",
           testo:
             error instanceof Error
@@ -315,19 +333,19 @@ export default function DashboardMetodiPagamentoClient({
             </p>
           </div>
 
-          {feedback ? (
+          {feedbackForm ? (
             <div
               className={`mt-6 rounded-[1.5rem] border px-5 py-4 text-sm leading-6 ${
-                feedback.tipo === "successo"
+                feedbackForm.tipo === "successo"
                   ? "border-emerald-200 bg-emerald-50 text-emerald-900"
                   : "border-rose-200 bg-rose-50 text-rose-900"
               }`}
             >
               <div className="flex items-start justify-between gap-4">
-                <p className="font-medium">{feedback.testo}</p>
+                <p className="font-medium">{feedbackForm.testo}</p>
                 <button
                   type="button"
-                  onClick={() => setFeedback(null)}
+                  onClick={() => setFeedbackForm(null)}
                   className="rounded-full border border-current px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] opacity-80 transition hover:opacity-100"
                 >
                   Chiudi
@@ -492,6 +510,27 @@ export default function DashboardMetodiPagamentoClient({
               le prossime corse oppure rimuovere quelli che non usi piu.
             </p>
           </div>
+
+          {feedbackMetodi ? (
+            <div
+              className={`mt-6 rounded-[1.5rem] border px-5 py-4 text-sm leading-6 ${
+                feedbackMetodi.tipo === "successo"
+                  ? "border-emerald-200 bg-emerald-50 text-emerald-900"
+                  : "border-rose-200 bg-rose-50 text-rose-900"
+              }`}
+            >
+              <div className="flex items-start justify-between gap-4">
+                <p className="font-medium">{feedbackMetodi.testo}</p>
+                <button
+                  type="button"
+                  onClick={() => setFeedbackMetodi(null)}
+                  className="rounded-full border border-current px-3 py-1 text-xs font-semibold uppercase tracking-[0.14em] opacity-80 transition hover:opacity-100"
+                >
+                  Chiudi
+                </button>
+              </div>
+            </div>
+          ) : null}
 
           <div className="mt-6 space-y-3">
             {metodi.length > 0 ? (

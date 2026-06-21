@@ -81,7 +81,11 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
         ? error.message
         : "Errore interno del server. Riprovare piu tardi.";
 
-    const status = messaggio.includes("non e disponibile") ? 404 : 500;
+    const status = messaggio.includes("non e disponibile")
+      ? 404
+      : messaggio.includes("corsa attiva o in pausa")
+        ? 409
+        : 500;
 
     console.error("[METODI PAGAMENTO DELETE ERROR]", error);
 

@@ -331,6 +331,30 @@ export async function eliminaMetodoPagamentoUtente(input: {
     throw new Error("Il metodo di pagamento selezionato non e disponibile.");
   }
 
+  const corsaAttivaConStessoMetodo = await prisma.corsa.findFirst({
+    where: {
+      utenteId: input.utenteId,
+      stato: {
+        in: ["ATTIVA", "IN_PAUSA"],
+      },
+      metodoPagamentoCircuito: metodo.circuito,
+      metodoPagamentoUltime4: metodo.ultime4,
+    },
+    select: {
+      id: true,
+      codice: true,
+      stato: true,
+    },
+  });
+
+  // Se la corsa e ancora aperta manteniamo bloccata la rimozione del metodo
+  // agganciato all'addebito, cosi il pagamento finale resta sempre tracciabile.
+  if (corsaAttivaConStessoMetodo) {
+    throw new Error(
+      "Non puoi eliminare il metodo di pagamento usato nella corsa attiva o in pausa finche il noleggio non viene chiuso.",
+    );
+  }
+
   return prisma.$transaction(async (transaction) => {
     await transaction.metodoPagamento.delete({
       where: {
