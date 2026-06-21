@@ -42,8 +42,8 @@ export default async function DashboardUtenteLayout({
               {utente.nome} {utente.cognome}
             </p>
             <p className="mt-2 text-sm leading-6 text-slate-600">
-              Accesso come {utente.ruoloCanonico}. Puoi muoverti tra le sezioni
-              dal menu qui sotto e chiudere la sessione quando hai concluso.
+              Da qui puoi aprire le varie sezioni della tua area e uscire in
+              modo sicuro quando hai concluso.
             </p>
 
             <div className="mt-4">

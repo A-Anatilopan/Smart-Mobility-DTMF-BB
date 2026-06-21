@@ -9,32 +9,8 @@ import { verificaSessione } from "@/lib/auth";
 import { richiediMetodoPagamentoAttivoUtente } from "@/lib/metodi-pagamento";
 import { trovaMezzoPerId } from "@/lib/mezzi";
 import { creaPrenotazioneNoleggio } from "@/lib/noleggio";
+import { patenteCompatibile, patenteScaduta } from "@/lib/patenti";
 import { normalizzaRuolo, RUOLI } from "@/lib/ruoli";
-
-// Livelli patente ordinati in senso crescente, utili per controlli minimi
-// sui mezzi che richiedono autorizzazioni diverse.
-const GERARCHIA_PATENTI = ["AM", "A1", "A2", "A", "B"] as const;
-
-function trovaIndicePatente(categoria: string | null | undefined): number {
-  if (!categoria) {
-    return -1;
-  }
-
-  return GERARCHIA_PATENTI.indexOf(
-    categoria as (typeof GERARCHIA_PATENTI)[number],
-  );
-}
-
-function patenteCompatibile(
-  patenteUtente: string | null | undefined,
-  patenteRichiesta: string,
-): boolean {
-  if (patenteRichiesta === "Nessuna") {
-    return true;
-  }
-
-  return trovaIndicePatente(patenteUtente) >= trovaIndicePatente(patenteRichiesta);
-}
 
 export async function POST(request: NextRequest) {
   try {
@@ -101,6 +77,32 @@ export async function POST(request: NextRequest) {
         },
         { status: 409 },
       );
+    }
+
+    if (mezzo.patenteRichiesta !== "Nessuna") {
+      if (
+        !utente.numeroPatente ||
+        !utente.categoriaPatente ||
+        !utente.scadenzaPatente
+      ) {
+        return NextResponse.json(
+          {
+            errore:
+              "Per questo mezzo devi avere una patente valida registrata nel tuo profilo.",
+          },
+          { status: 403 },
+        );
+      }
+
+      if (patenteScaduta(utente.scadenzaPatente)) {
+        return NextResponse.json(
+          {
+            errore:
+              "La patente registrata nel tuo profilo risulta scaduta.",
+          },
+          { status: 403 },
+        );
+      }
     }
 
     if (

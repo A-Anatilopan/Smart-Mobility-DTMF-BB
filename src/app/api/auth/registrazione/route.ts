@@ -7,6 +7,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hashPassword } from "@/lib/auth";
+import {
+  normalizzaDataPatente,
+  validaCategoriaPatente,
+} from "@/lib/patenti";
 
 // Valida il formato del Codice Fiscale italiano (16 caratteri alfanumerici)
 function validaCodiceFiscale(cf: string): boolean {
@@ -33,6 +37,7 @@ export async function POST(request: NextRequest) {
       codiceFiscale,
       numeroPatente,
       categoriaPatente,
+      scadenzaPatente,
     } = body;
 
     // ---- STEP 1: Validazione campi obbligatori ----
@@ -68,6 +73,42 @@ export async function POST(request: NextRequest) {
     if (password.length < 8) {
       return NextResponse.json(
         { errore: "La password deve contenere almeno 8 caratteri." },
+        { status: 400 }
+      );
+    }
+
+    const numeroPatentePulito = numeroPatente?.trim() || "";
+    const categoriaPatentePulita = categoriaPatente?.trim().toUpperCase() || "";
+    const scadenzaPatentePulita = normalizzaDataPatente(scadenzaPatente);
+    const datiPatenteCompilati =
+      !!numeroPatentePulito || !!categoriaPatentePulita || !!scadenzaPatentePulita;
+
+    if (
+      datiPatenteCompilati &&
+      (!numeroPatentePulito || !categoriaPatentePulita || !scadenzaPatentePulita)
+    ) {
+      return NextResponse.json(
+        {
+          errore:
+            "Per salvare la patente devi compilare numero, categoria e data di scadenza.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (numeroPatentePulito && numeroPatentePulito.length < 5) {
+      return NextResponse.json(
+        {
+          errore:
+            "Il numero patente inserito e troppo corto per essere valido.",
+        },
+        { status: 400 }
+      );
+    }
+
+    if (categoriaPatentePulita && !validaCategoriaPatente(categoriaPatentePulita)) {
+      return NextResponse.json(
+        { errore: "La categoria patente inserita non e valida." },
         { status: 400 }
       );
     }
@@ -111,8 +152,11 @@ export async function POST(request: NextRequest) {
         passwordHash,
         dataNascita: new Date(dataNascita),
         codiceFiscale: codiceFiscale.toUpperCase().trim(),
-        numeroPatente: numeroPatente?.trim() || null,
-        categoriaPatente: categoriaPatente?.trim() || null,
+        numeroPatente: numeroPatentePulito || null,
+        categoriaPatente: categoriaPatentePulita || null,
+        scadenzaPatente: scadenzaPatentePulita
+          ? new Date(scadenzaPatentePulita)
+          : null,
         ruolo: "Utente",
         stato: "ATTIVO",
       },

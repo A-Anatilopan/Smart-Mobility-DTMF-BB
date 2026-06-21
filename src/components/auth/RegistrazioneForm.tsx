@@ -13,6 +13,7 @@ type RegistrazioneFormData = {
   codiceFiscale: string;
   numeroPatente: string;
   categoriaPatente: string;
+  scadenzaPatente: string;
 };
 
 // Messaggio di feedback mostrato all'utente dopo validazione o submit.
@@ -31,6 +32,7 @@ const INITIAL_FORM_DATA: RegistrazioneFormData = {
   codiceFiscale: "",
   numeroPatente: "",
   categoriaPatente: "",
+  scadenzaPatente: "",
 };
 
 // Questa validazione intercetta gli errori piu immediati prima della chiamata API.
@@ -48,6 +50,20 @@ function validaForm(data: RegistrazioneFormData): string | null {
 
   if (data.password.length < 8) {
     return "La password deve contenere almeno 8 caratteri.";
+  }
+
+  const datiPatenteCompilati =
+    !!data.numeroPatente.trim() ||
+    !!data.categoriaPatente.trim() ||
+    !!data.scadenzaPatente;
+
+  if (
+    datiPatenteCompilati &&
+    (!data.numeroPatente.trim() ||
+      !data.categoriaPatente.trim() ||
+      !data.scadenzaPatente)
+  ) {
+    return "Se inserisci la patente devi completare numero, categoria e scadenza.";
   }
 
   return null;
@@ -103,6 +119,7 @@ export default function RegistrazioneForm() {
           codiceFiscale: formData.codiceFiscale.trim(),
           numeroPatente: formData.numeroPatente.trim(),
           categoriaPatente: formData.categoriaPatente.trim(),
+          scadenzaPatente: formData.scadenzaPatente,
         }),
       });
 
@@ -318,6 +335,24 @@ export default function RegistrazioneForm() {
                 className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 uppercase text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
                 placeholder="B"
                 maxLength={20}
+              />
+            </div>
+
+            <div className="space-y-2 md:col-span-2">
+              <label
+                className="text-sm font-semibold text-slate-700"
+                htmlFor="scadenzaPatente"
+              >
+                Scadenza patente
+              </label>
+              <input
+                id="scadenzaPatente"
+                type="date"
+                value={formData.scadenzaPatente}
+                onChange={(event) =>
+                  aggiornaCampo("scadenzaPatente", event.target.value)
+                }
+                className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-teal-500 focus:ring-4 focus:ring-teal-100"
               />
             </div>
           </div>

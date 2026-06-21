@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   DivIcon,
+  type Map as LeafletMap,
   type LatLngBoundsExpression,
   type LatLngExpression,
   type LatLngTuple,
@@ -143,6 +144,20 @@ function AdattaMappaAiContenuti({
     map.setView(BARI_CENTRO, 14);
     haGiaPosizionatoLaMappa.current = true;
   }, [bounds, map, posizioneCentrale]);
+
+  return null;
+}
+
+function RegistraIstanzaMappa({
+  onPronta,
+}: {
+  onPronta: (map: LeafletMap) => void;
+}) {
+  const map = useMap();
+
+  useEffect(() => {
+    onPronta(map);
+  }, [map, onPronta]);
 
   return null;
 }
@@ -541,6 +556,7 @@ export default function MappaServizioLeaflet({
   mostraPuntiInteresse = true,
 }: MappaServizioProps) {
   const testi = TESTI_MAPPA[modalita];
+  const [mappa, setMappa] = useState<LeafletMap | null>(null);
   const [statiDinamiciServer, setStatiDinamiciServer] = useState<
     Record<string, Mezzo["stato"]>
   >({});
@@ -605,6 +621,7 @@ export default function MappaServizioLeaflet({
       ].join("::"),
     [aree, modalita, posizioneUtente],
   );
+  const zoomPosizioneAttiva = modalita === "utente" ? 16 : 15;
 
   useEffect(() => {
     if (modalita === "utente" || mezzi.length === 0) {
@@ -755,9 +772,25 @@ export default function MappaServizioLeaflet({
               </p>
             </div>
             {posizioneUtente ? (
-              <span className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                {modalita === "utente" ? "La tua posizione" : "Posizione utente attiva"}
-              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!mappa) {
+                    return;
+                  }
+
+                  mappa.setView(
+                    toLatLng(posizioneUtente),
+                    zoomPosizioneAttiva,
+                    { animate: true },
+                  );
+                }}
+                className="rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700 transition hover:border-blue-300 hover:bg-blue-100"
+              >
+                {modalita === "utente"
+                  ? "Vai alla tua posizione"
+                  : "Vai alla posizione operativa"}
+              </button>
             ) : (
               <span className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold text-slate-600">
                 Vista territoriale
@@ -810,6 +843,7 @@ export default function MappaServizioLeaflet({
                 bounds={bounds}
                 posizioneCentrale={posizioneUtente}
               />
+              <RegistraIstanzaMappa onPronta={setMappa} />
 
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'

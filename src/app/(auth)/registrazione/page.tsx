@@ -26,7 +26,8 @@ export default function RegistrazionePage() {
               <p className="max-w-lg text-base leading-7 text-slate-300">
                 Crea il tuo profilo personale per utilizzare i servizi di
                 sharing mobility nella citta di Zootropolis. Se possiedi una
-                patente, puoi inserirla gia durante la registrazione.
+                patente, puoi inserirla gia durante la registrazione insieme
+                alla sua data di scadenza.
               </p>
             </div>
           </div>
@@ -46,8 +47,8 @@ export default function RegistrazionePage() {
                 Dati patente opzionali
               </p>
               <p className="mt-2 text-sm leading-6 text-slate-300">
-                Completa subito anche i dati di guida, se disponibili, per un
-                profilo piu completo.
+                Completa subito anche numero, categoria e scadenza per guidare
+                i mezzi che richiedono una patente valida.
               </p>
             </div>
             <div className="rounded-2xl border border-white/10 bg-white/5 p-4">

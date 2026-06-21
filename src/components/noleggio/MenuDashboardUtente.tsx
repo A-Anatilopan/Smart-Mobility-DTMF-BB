@@ -28,7 +28,7 @@ const VOCI_MENU: VoceMenu[] = [
   {
     href: "/dashboard/dati-personali",
     etichetta: "Dati personali",
-    descrizione: "Area in preparazione",
+    descrizione: "Profilo, dati anagrafici e patente",
   },
 ];
 
