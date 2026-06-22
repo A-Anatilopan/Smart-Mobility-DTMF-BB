@@ -24,7 +24,7 @@ Questa guida serve a far partire il sistema in locale con una base dati gia pron
 Prima di iniziare servono:
 - Node.js installato
 - npm installato insieme a Node.js
-- MySQL Server installato e avviato
+- MySQL Server  e MYSQL Workbench installato e avviato
 - un database MySQL locale chiamato `esmartmobility`
 
 ### Importante: React, Next.js, Prisma e librerie non vanno installati a mano
@@ -32,7 +32,7 @@ Prima di iniziare servono:
 Non bisogna installare manualmente `react`, `next`, `prisma`, `@prisma/client`,
 `leaflet` o altre librerie una per una.
 
-Basta eseguire:
+Basta eseguire nella terminale e sempre nella cartella del progetto:
 
 ```bash
 npm install
@@ -69,10 +69,10 @@ npm -v
 
 ### 2. Installare MySQL Server
 
-1. Installare **MySQL Server 8.x**.
+1. Installare **MySQL Server 8.x e MYSQL Workbench**.
 2. Annotare la password dell'utente `root` scelta durante il setup.
 3. Avviare MySQL.
-4. Creare un database locale chiamato `esmartmobility`.
+4. Creare un database locale chiamato `esmartmobility` aprendo MYSQL Workbench.
 
 Se si usa MySQL Workbench o un altro client SQL, basta creare quel database vuoto.
 
@@ -98,7 +98,7 @@ Questo comando installa automaticamente anche:
 - React Leaflet
 - TypeScript
 
-### 5. Creare il file `.env`
+### 5. Aprire Visual Studio Code e creare il file `.env`
 
 Nel progetto e presente il file [`.env.example`](C:/Users/angel/Desktop/ing%20s/Smart-Mobility-DTMF-BB/.env.example).  
 Copiare il contenuto dentro un nuovo file `.env` e inserire la password reale del proprio MySQL locale.
@@ -111,7 +111,7 @@ DATABASE_URL="mysql://root:LA_TUA_PASSWORD@localhost:3306/esmartmobility"
 
 ### 6. Applicare le migration del database
 
-Nel terminale eseguire:
+Nela cartella del progetto nel terminale eseguire:
 
 ```bash
 npx prisma migrate deploy
@@ -179,9 +179,9 @@ npm -v
 
 ### 2. Installare MySQL Server
 
-1. Installare **MySQL Server**.
+1. Installare **MySQL Server e MYSQL Workbench**.
 2. Avviare il servizio MySQL.
-3. Creare un database chiamato `esmartmobility`.
+3. Creare un database chiamato `esmartmobility` tramite MYSQL Workbench.
 4. Annotare la password dell'utente `root`.
 
 ### 3. Scaricare o clonare il progetto
@@ -198,7 +198,7 @@ npm install
 
 Anche su Mac questo comando installa automaticamente tutte le librerie del progetto, comprese React, Next.js e Prisma.
 
-### 5. Creare il file `.env`
+### 5. Aprire Visual Studio Code e creare il file `.env`
 
 Nel progetto e presente il file [`.env.example`](C:/Users/angel/Desktop/ing%20s/Smart-Mobility-DTMF-BB/.env.example).  
 Creare un file `.env` e inserire la connessione corretta al proprio MySQL locale:
