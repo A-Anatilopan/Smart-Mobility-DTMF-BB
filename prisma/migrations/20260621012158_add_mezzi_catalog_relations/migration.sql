@@ -66,7 +66,3 @@ ALTER TABLE `corse`
 ALTER TABLE `segnalazioni_mezzo`
     ADD CONSTRAINT `segnalazioni_mezzo_mezzoId_fkey`
     FOREIGN KEY (`mezzoId`) REFERENCES `mezzi`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;
-
-ALTER TABLE `sessioni_operative_mezzo`
-    ADD CONSTRAINT `sessioni_operative_mezzo_mezzoId_fkey`
-    FOREIGN KEY (`mezzoId`) REFERENCES `mezzi`(`id`) ON DELETE RESTRICT ON UPDATE CASCADE;

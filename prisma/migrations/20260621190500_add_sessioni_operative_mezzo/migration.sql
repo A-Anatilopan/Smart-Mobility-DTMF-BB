@@ -29,3 +29,11 @@ ALTER TABLE `sessioni_operative_mezzo`
 ADD CONSTRAINT `sessioni_operative_mezzo_operatoreId_fkey`
 FOREIGN KEY (`operatoreId`) REFERENCES `utenti`(`id`)
 ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- Il vincolo verso `mezzi` viene aggiunto qui e non nella migration del
+-- catalogo mezzi, perche questa tabella nasce solo in questo punto della
+-- timeline storica delle migration.
+ALTER TABLE `sessioni_operative_mezzo`
+ADD CONSTRAINT `sessioni_operative_mezzo_mezzoId_fkey`
+FOREIGN KEY (`mezzoId`) REFERENCES `mezzi`(`id`)
+ON DELETE RESTRICT ON UPDATE CASCADE;
