@@ -13,6 +13,7 @@ import {
 const LUNGHEZZA_MINIMA_TITOLO = 5;
 const LUNGHEZZA_MINIMA_DESCRIZIONE = 10;
 const LUNGHEZZA_MINIMA_DESCRIZIONE_ALTRO = 15;
+const LUNGHEZZA_MINIMA_INDIRIZZO = 5;
 const FINESTRA_DUPLICATI_ORE = 12;
 
 type AmministrazioneRidotta = Pick<Utente, "id" | "nome" | "cognome" | "email">;
@@ -189,6 +190,18 @@ export function validaDescrizioneSegnalazioneUrbana(input: {
   return null;
 }
 
+export function validaIndirizzoSegnalazioneUrbana(indirizzo: string): string | null {
+  if (!indirizzo) {
+    return "Inserisci un indirizzo o riferimento urbano per localizzare la criticita.";
+  }
+
+  if (indirizzo.length < LUNGHEZZA_MINIMA_INDIRIZZO) {
+    return "L'indirizzo o riferimento urbano deve avere almeno 5 caratteri utili.";
+  }
+
+  return null;
+}
+
 export function validaPosizioneSegnalazioneUrbana(input: {
   latitudine: number | null;
   longitudine: number | null;
@@ -304,6 +317,12 @@ export async function creaSegnalazioneUrbana(input: {
 
   if (erroreDescrizione) {
     throw new Error(erroreDescrizione);
+  }
+
+  const erroreIndirizzo = validaIndirizzoSegnalazioneUrbana(indirizzo);
+
+  if (erroreIndirizzo) {
+    throw new Error(erroreIndirizzo);
   }
 
   const errorePosizione = validaPosizioneSegnalazioneUrbana({

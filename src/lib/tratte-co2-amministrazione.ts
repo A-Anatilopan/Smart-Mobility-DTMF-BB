@@ -56,9 +56,30 @@ const CO2_RISPARMIATA_GRAMMI_KM: Record<TipoMezzo, number> = {
 };
 
 function formattaNumeroCompatto(valore: number): string {
+  const opzioni =
+    valore > 0 && valore < 1
+      ? {
+          maximumFractionDigits: 2,
+          minimumFractionDigits: 2,
+        }
+      : valore >= 100
+        ? {
+            maximumFractionDigits: 0,
+            minimumFractionDigits: 0,
+          }
+        : valore > 0 && valore < 10
+          ? {
+              maximumFractionDigits: 1,
+              minimumFractionDigits: 1,
+            }
+          : {
+              maximumFractionDigits: 0,
+              minimumFractionDigits: 0,
+            };
+
   return new Intl.NumberFormat("it-IT", {
-    maximumFractionDigits: valore >= 100 ? 0 : 1,
-    minimumFractionDigits: valore > 0 && valore < 10 ? 1 : 0,
+    maximumFractionDigits: opzioni.maximumFractionDigits,
+    minimumFractionDigits: opzioni.minimumFractionDigits,
   }).format(valore);
 }
 

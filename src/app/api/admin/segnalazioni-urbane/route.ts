@@ -141,6 +141,10 @@ export async function POST(request: NextRequest) {
             messaggio.includes("Inserisci una descrizione valida") ||
             messaggio.includes("Descrivi la criticita con almeno") ||
             messaggio.includes("Per la categoria selezionata descrivi") ||
+            messaggio.includes("Inserisci un indirizzo o riferimento urbano") ||
+            messaggio.includes(
+              "L'indirizzo o riferimento urbano deve avere almeno",
+            ) ||
             messaggio.includes("Se inserisci la posizione") ||
             messaggio.includes("latitudine indicata") ||
             messaggio.includes("longitudine indicata")

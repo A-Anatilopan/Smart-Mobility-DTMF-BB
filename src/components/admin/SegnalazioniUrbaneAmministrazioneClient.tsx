@@ -20,6 +20,12 @@ type SegnalazioniUrbaneApiResponse = {
   segnalazioni?: SegnalazioneUrbanaDominio[];
 };
 
+type FeedbackAggiornamentoSegnalazione = {
+  segnalazioneId: number;
+  tipo: "successo" | "errore";
+  messaggio: string;
+};
+
 type FormSegnalazioneUrbana = {
   categoria: CategoriaSegnalazioneUrbana;
   titolo: string;
@@ -140,8 +146,11 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
   const [segnalazioni, setSegnalazioni] = useState(segnalazioniIniziali);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
-  const [errore, setErrore] = useState<string | null>(null);
+  const [feedbackForm, setFeedbackForm] = useState<string | null>(null);
+  const [erroreForm, setErroreForm] = useState<string | null>(null);
+  const [erroreElenco, setErroreElenco] = useState<string | null>(null);
+  const [feedbackAggiornamento, setFeedbackAggiornamento] =
+    useState<FeedbackAggiornamentoSegnalazione | null>(null);
   const [segnalazioneInAggiornamentoId, setSegnalazioneInAggiornamentoId] =
     useState<number | null>(null);
   const [query, setQuery] = useState("");
@@ -213,7 +222,7 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
 
   async function ricaricaSegnalazioni() {
     setIsRefreshing(true);
-    setErrore(null);
+    setErroreElenco(null);
 
     try {
       const response = await fetch("/api/admin/segnalazioni-urbane?limite=12", {
@@ -225,7 +234,7 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
         (await response.json().catch(() => null)) as SegnalazioniUrbaneApiResponse | null;
 
       if (!response.ok || !result?.segnalazioni) {
-        setErrore(
+        setErroreElenco(
           result?.errore ??
             "Non e stato possibile aggiornare l'elenco delle segnalazioni urbane.",
         );
@@ -234,7 +243,7 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
 
       setSegnalazioni(result.segnalazioni);
     } catch {
-      setErrore(
+      setErroreElenco(
         "Non e stato possibile aggiornare l'elenco delle segnalazioni urbane.",
       );
     } finally {
@@ -245,8 +254,8 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setIsSubmitting(true);
-    setFeedback(null);
-    setErrore(null);
+    setFeedbackForm(null);
+    setErroreForm(null);
 
     try {
       const response = await fetch("/api/admin/segnalazioni-urbane", {
@@ -268,7 +277,7 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
         (await response.json().catch(() => null)) as SegnalazioniUrbaneApiResponse | null;
 
       if (!response.ok || !result?.segnalazione) {
-        setErrore(
+        setErroreForm(
           result?.errore ??
             "Non e stato possibile registrare la segnalazione urbana.",
         );
@@ -280,11 +289,11 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
       setQuery("");
       setCategoriaFiltro("TUTTE");
       setStatoFiltro("TUTTE");
-      setFeedback(
+      setFeedbackForm(
         result.messaggio ?? "Segnalazione urbana registrata con successo.",
       );
     } catch {
-      setErrore("Non e stato possibile registrare la segnalazione urbana.");
+      setErroreForm("Non e stato possibile registrare la segnalazione urbana.");
     } finally {
       setIsSubmitting(false);
     }
@@ -295,8 +304,7 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
     nuovoStato: StatoSegnalazioneUrbana,
   ) {
     setSegnalazioneInAggiornamentoId(segnalazioneId);
-    setFeedback(null);
-    setErrore(null);
+    setFeedbackAggiornamento(null);
 
     try {
       const response = await fetch(
@@ -316,10 +324,13 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
         (await response.json().catch(() => null)) as SegnalazioniUrbaneApiResponse | null;
 
       if (!response.ok || !result?.segnalazione) {
-        setErrore(
-          result?.errore ??
+        setFeedbackAggiornamento({
+          segnalazioneId,
+          tipo: "errore",
+          messaggio:
+            result?.errore ??
             "Non e stato possibile aggiornare lo stato della segnalazione urbana.",
-        );
+        });
         return;
       }
 
@@ -332,14 +343,20 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
             new Date(segnalazioneA.updatedAt).getTime(),
         ),
       );
-      setFeedback(
-        result.messaggio ??
+      setFeedbackAggiornamento({
+        segnalazioneId,
+        tipo: "successo",
+        messaggio:
+          result.messaggio ??
           "Stato della segnalazione urbana aggiornato con successo.",
-      );
+      });
     } catch {
-      setErrore(
-        "Non e stato possibile aggiornare lo stato della segnalazione urbana.",
-      );
+      setFeedbackAggiornamento({
+        segnalazioneId,
+        tipo: "errore",
+        messaggio:
+          "Non e stato possibile aggiornare lo stato della segnalazione urbana.",
+      });
     } finally {
       setSegnalazioneInAggiornamentoId(null);
     }
@@ -495,15 +512,15 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
               </label>
             </div>
 
-            {feedback ? (
+            {feedbackForm ? (
               <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
-                {feedback}
+                {feedbackForm}
               </div>
             ) : null}
 
-            {errore ? (
+            {erroreForm ? (
               <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
-                {errore}
+                {erroreForm}
               </div>
             ) : null}
 
@@ -606,6 +623,12 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
             </label>
           </div>
 
+          {erroreElenco ? (
+            <div className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-medium text-rose-800">
+              {erroreElenco}
+            </div>
+          ) : null}
+
           <div className="mt-4 flex flex-wrap gap-3">
             <span className="rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.16em] text-slate-600">
               Visualizzate: {segnalazioniFiltrate.length}
@@ -624,6 +647,10 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
                 const posizione = descriviPosizioneSegnalazione(segnalazione);
                 const linkPosizione = creaLinkPosizioneSegnalazione(segnalazione);
                 const stileStato = ricavaStileStato(segnalazione.stato);
+                const feedbackCard =
+                  feedbackAggiornamento?.segnalazioneId === segnalazione.id
+                    ? feedbackAggiornamento
+                    : null;
 
                 return (
                   <article
@@ -697,6 +724,26 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
                       </div>
                     </div>
 
+                    <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                      <div className="rounded-2xl bg-white px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                          Registrata il
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-slate-950">
+                          {formattaDataOraItaliana(segnalazione.createdAt)}
+                        </p>
+                      </div>
+
+                      <div className="rounded-2xl bg-white px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                          Ultimo aggiornamento
+                        </p>
+                        <p className="mt-1 text-sm font-medium text-slate-950">
+                          {formattaDataOraItaliana(segnalazione.updatedAt)}
+                        </p>
+                      </div>
+                    </div>
+
                     <div className="mt-4 rounded-2xl bg-white px-4 py-4">
                       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
                         <div className="space-y-1">
@@ -728,6 +775,18 @@ export default function SegnalazioniUrbaneAmministrazioneClient({
                           </select>
                         </div>
                       </div>
+
+                      {feedbackCard ? (
+                        <div
+                          className={`mt-4 rounded-2xl border px-4 py-3 text-sm font-medium ${
+                            feedbackCard.tipo === "successo"
+                              ? "border-emerald-200 bg-emerald-50 text-emerald-800"
+                              : "border-rose-200 bg-rose-50 text-rose-800"
+                          }`}
+                        >
+                          {feedbackCard.messaggio}
+                        </div>
+                      ) : null}
                     </div>
                   </article>
                 );
