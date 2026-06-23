@@ -88,6 +88,11 @@ Nel terminale, dentro la cartella del progetto, eseguire:
 npm install
 ```
 
+Se il terminale blocca `npm` su Windows, usare:
+
+```bash
+cmd /c npm install
+
 Questo comando installa automaticamente anche:
 - React
 - React DOM
@@ -117,11 +122,21 @@ Nela cartella del progetto nel terminale eseguire:
 npx prisma migrate deploy
 ```
 
+Se il terminale blocca `npx`, usare:
+
+```bash
+cmd /c npx prisma migrate deploy
+
 ### 7. Rigenerare il client Prisma
 
 ```bash
 npx prisma generate
 ```
+
+Se il terminale blocca `npx`, usare:
+
+```bash
+cmd /c npx prisma generate
 
 ### 8. Popolare il database con i dati demo
 
@@ -142,6 +157,11 @@ npm run seed:demo
 ```bash
 npx prisma studio
 ```
+
+Se il terminale blocca `npx`, usare:
+
+```bash
+cmd /c npx prisma studio
 
 ### 10. Avviare l'applicazione
 
